@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -32,12 +33,22 @@ export function WorkspaceDataProvider({
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot | null>(null);
   const [loading, setLoading] = useState(mode === "connected");
   const [error, setError] = useState<string | null>(null);
+  const permissionCheckStarted = useRef(false);
 
   const refresh = useCallback(async () => {
     if (mode === "demo") return null;
     setLoading(true);
     setError(null);
     try {
+      if (!permissionCheckStarted.current) {
+        permissionCheckStarted.current = true;
+        try {
+          await fetch("/api/gmail/status", { cache: "no-store" });
+        } catch {
+          // Permission reconciliation is best effort. The send tool always
+          // performs its own authoritative scope check before Gmail is called.
+        }
+      }
       const response = await fetch("/api/workspace", { cache: "no-store" });
       const result = (await response.json()) as WorkspaceSnapshot | { error?: string };
       if (!response.ok || !("connected" in result)) {

@@ -1,6 +1,17 @@
 import { createClerkClient } from "@clerk/backend";
 
 export async function getGoogleAccessToken(userId: string, requiredScopes: readonly string[]) {
+  const authorization = await getGoogleAuthorization(userId, requiredScopes);
+  if (!authorization.token) {
+    throw new Error(`Google authorization is missing required scopes: ${requiredScopes.join(", ")}`);
+  }
+  return authorization.token;
+}
+
+export async function getGoogleAuthorization(
+  userId: string,
+  requiredScopes: readonly string[],
+) {
   const secretKey = process.env.CLERK_SECRET_KEY;
   if (!secretKey) throw new Error("CLERK_SECRET_KEY is required to access Gmail.");
 
@@ -11,8 +22,8 @@ export async function getGoogleAccessToken(userId: string, requiredScopes: reado
     return Boolean(entry.token) && requiredScopes.every((scope) => scopes.has(scope));
   });
 
-  if (!token?.token) {
-    throw new Error(`Google authorization is missing required scopes: ${requiredScopes.join(", ")}`);
-  }
-  return token.token;
+  return {
+    authorized: Boolean(token?.token),
+    token: token?.token ?? null,
+  };
 }

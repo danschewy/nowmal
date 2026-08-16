@@ -124,6 +124,12 @@ describe("Nowmal connected workspace", () => {
     let workspaceReads = 0;
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
+      if (url === "/api/gmail/status") {
+        return new Response(
+          JSON.stringify({ connected: true, permissionStatus: "current" }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
       if (url === "/api/workspace/analyze") {
         return new Response(
           JSON.stringify({
@@ -176,6 +182,7 @@ describe("Nowmal connected workspace", () => {
       "/api/workspace/analyze",
       expect.objectContaining({ method: "POST" }),
     );
+    expect(fetchMock.mock.calls.filter(([url]) => String(url) === "/api/gmail/status")).toHaveLength(1);
     expect(fetchMock).not.toHaveBeenCalledWith(
       "/api/gmail/sync",
       expect.anything(),

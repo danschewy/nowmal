@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { isDatabaseConfigured } from "@/lib/data/client";
 import { getMailboxStatus, setMailboxSendEnabled } from "@/lib/data/repository";
-import { getGoogleAccessToken } from "@/lib/gmail/auth";
+import { getGoogleAuthorization } from "@/lib/gmail/auth";
 import { product } from "@/lib/domain/config";
 
 export async function GET() {
@@ -16,17 +16,30 @@ export async function GET() {
   }
   let status = await getMailboxStatus(session.userId);
   if (status.connection) {
-    let sendEnabled = false;
+    let sendEnabled: boolean;
     try {
-      await getGoogleAccessToken(session.userId, [product.gmailSendScope]);
-      sendEnabled = true;
+      const authorization = await getGoogleAuthorization(session.userId, [product.gmailSendScope]);
+      sendEnabled = authorization.authorized;
     } catch {
-      sendEnabled = false;
+      return NextResponse.json(
+        {
+          connected: true,
+          permissionStatus: "unknown",
+          reason: "google_permission_check_failed",
+        },
+        { status: 502 },
+      );
     }
     if (status.connection.sendEnabled !== sendEnabled) {
       await setMailboxSendEnabled(session.userId, sendEnabled);
       status = await getMailboxStatus(session.userId);
     }
   }
-  return NextResponse.json({ connected: Boolean(status.connection), ...status });
+  return NextResponse.json({
+    connected: Boolean(status.connection),
+    permissionStatus: "current",
+    threadCount: status.threadCount,
+    sendEnabled: status.connection?.sendEnabled ?? false,
+    lastSyncedAt: status.connection?.lastSyncedAt?.toISOString() ?? null,
+  });
 }

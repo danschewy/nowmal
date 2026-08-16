@@ -33,6 +33,7 @@ test("Now requires the human gate before a send", async ({ page }) => {
 
 test("private workspace APIs reject a signed-out browser", async ({ request }) => {
   const workspace = await request.get("/api/workspace");
+  const gmailStatus = await request.get("/api/gmail/status");
   const analysis = await request.post("/api/workspace/analyze", {
     data: { maxThreads: 1 },
   });
@@ -41,5 +42,6 @@ test("private workspace APIs reject a signed-out browser", async ({ request }) =
   // return 503 before auth because Clerk/Neon are intentionally absent; both
   // fail closed before any workspace read or model call.
   expect([401, 503]).toContain(workspace.status());
+  expect([401, 503]).toContain(gmailStatus.status());
   expect([401, 503]).toContain(analysis.status());
 });

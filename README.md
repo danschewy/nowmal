@@ -20,6 +20,7 @@ The full product demo is public at `/demo` and needs no account. `/workspace` is
 - Bounded AI analysis of the stored index in 16-thread batches, with prompt-injection isolation, exact-quote validation, deterministic dedupe keys, incremental re-analysis, and append-only user corrections.
 - A normalized Neon/Drizzle data model and checked-in migration.
 - A `send_email` tool protected by Eve's durable `always()` approval, separate `gmail.send` consent, cleared-draft checks, a stable idempotency key, and an append-only audit record.
+- Once-per-page Google consent reconciliation keeps the connected UI current without reading Gmail; transient Clerk failures leave the last known state untouched, while every real send still rechecks the scope authoritatively.
 - Streamable HTTP MCP channel at `/eve/v1/mcp`, protected by Vercel OIDC in production and local-dev identity locally.
 - Unit interaction tests, production-browser tests, type checks, and a combined Eve + Next production build.
 

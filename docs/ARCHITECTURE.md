@@ -115,6 +115,12 @@ demo keeps interactive rule switches because it is explicitly a reversible produ
 
 The separate Google scope is `https://www.googleapis.com/auth/gmail.send`; normal indexing uses `https://www.googleapis.com/auth/gmail.readonly`.
 
+On connected-app startup, `/api/gmail/status` reconciles the stored send-capability flag once against
+Clerk's Google token scopes. This call reads authorization metadata, not Gmail. A successful check may
+turn the display flag on or off; a Clerk outage returns an unknown status and preserves the last known
+value. The display flag is never trusted as send authority—`send_email` obtains and verifies a current
+token again before reserving the one-shot audit attempt.
+
 ## Trust boundaries
 
 - Browser → Next APIs: Clerk session, checked again beside each resource mutation.
