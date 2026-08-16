@@ -1,9 +1,9 @@
 import { createClerkClient } from "@clerk/backend";
-import { parsePublishableKey } from "@clerk/shared/keys";
 import {
   withAuthChallenges,
   type AuthFn,
 } from "eve/channels/auth";
+import { clerkIssuerFromEnvironment } from "../../lib/auth/clerk-issuer";
 
 type AuthorizedClerkRequest = (input: {
   request: Request;
@@ -68,10 +68,7 @@ export function clerkOAuthAuth(): AuthFn<Request> {
 }
 
 export function clerkIssuer() {
-  const configured = process.env.CLERK_ISSUER_URL;
-  if (configured) return configured.replace(/\/$/, "");
-  const key = parsePublishableKey(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
-  return key ? `https://${key.frontendApi}` : "https://clerk.invalid";
+  return clerkIssuerFromEnvironment();
 }
 
 function clerkClientFromEnvironment() {
