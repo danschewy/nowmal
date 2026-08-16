@@ -1,9 +1,15 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: { alias: { "@": import.meta.dirname } },
   test: {
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
-    exclude: ["tests/e2e/**", "node_modules/**"],
+    exclude: [
+      ...configDefaults.exclude,
+      "tests/e2e/**",
+      ".eve/**",
+      ".next/**",
+      ".output/**",
+    ],
   },
 });
