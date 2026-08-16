@@ -43,6 +43,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
     const result = (await response.json()) as {
       analyzedThreads?: number;
       workItemsUpserted?: number;
+      workItemsCompleted?: number;
       failedThreads?: number;
       alreadyCurrent?: boolean;
       error?: string;
@@ -86,7 +87,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
       notify(
         result?.alreadyCurrent
           ? "Your workspace analysis is already current"
-          : `${result?.analyzedThreads ?? 0} threads analyzed · ${result?.workItemsUpserted ?? 0} tasks and promises found`,
+          : `${result?.analyzedThreads ?? 0} threads analyzed · ${result?.workItemsUpserted ?? 0} open items found · ${result?.workItemsCompleted ?? 0} completed with new evidence`,
       );
     } catch (error) {
       notify(error instanceof Error ? error.message : "Workspace analysis failed.");
@@ -112,7 +113,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
     ],
     [
       "Find tasks and promises",
-      "Analyzes only the bounded index and saves an exact source quote with every result.",
+      "Analyzes only the bounded index, saves exact source quotes, and closes an existing item only with newer resolving evidence.",
       "Included",
       Boolean(snapshot?.analysis.analyzedThreadCount),
       "Included",
@@ -291,7 +292,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
                 </div>
                 <div>
                   <dt>Saved</dt>
-                  <dd>Only validated tasks and promises, each with an exact source quote</dd>
+                  <dd>Validated open items and explicit completions, each with an exact source quote</dd>
                 </div>
               </dl>
               <p className="confirmation-metering">

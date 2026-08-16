@@ -9,6 +9,7 @@ import type {
   WorkspaceWorkItemSummary,
 } from "@/lib/workspace/snapshot";
 import { selectConnectedNowQueue } from "@/lib/workspace/now-queue";
+import { buildConnectedTrackers, type ConnectedTracker } from "@/lib/workspace/workstreams";
 import { useWorkspaceData } from "./WorkspaceData";
 import { ActionButton, Eyebrow, Lede, PageHeading, SectionLabel, StatusSquare } from "./ui";
 
@@ -55,6 +56,11 @@ export function ConnectedRulesScreen() {
       label: "Merge duplicate obligations",
       description: "Uses a stable intent, counterparty, kind, and occurrence key. Every supporting source thread stays attached to the one resulting item.",
       value: "Automatic",
+    },
+    {
+      label: "Close resolved work",
+      description: "During confirmed analysis, requires a newer exact quote that explicitly fulfills or cancels an existing item. A successful approved Nowmal send closes only its directly linked task.",
+      value: "Evidence only",
     },
     {
       label: "Keep your corrections",
@@ -623,17 +629,21 @@ function ConnectedDraft({ draft }: { draft: WorkspaceDraftSummary }) {
 
 function ConnectedTrackersScreen() {
   const { snapshot } = useWorkspaceData();
-  const { patch } = useDemoStore();
+  const { state, patch } = useDemoStore();
   const items = (snapshot?.workItems ?? []).filter((item) => item.status !== "incorrect");
-  const grouped = groupWorkstreams(items);
+  const grouped = buildConnectedTrackers(items);
+  const selected = grouped.find((group) =>
+    group.key === state.trackerId ||
+    (state.trackerId === "job" && group.key === "process:job-search"),
+  ) ?? grouped[0];
 
   return (
     <div className="screen">
-      <Eyebrow>Trackers · repeated workstreams</Eyebrow>
+      <Eyebrow>Trackers · processes found across your mail</Eyebrow>
       <PageHeading>{grouped.length ? `${grouped.length} repeated ${grouped.length === 1 ? "workstream" : "workstreams"}.` : "No repeated workstream yet."}</PageHeading>
       <Lede>
-        Nowmal groups the same counterparty across obligations and source threads. It will not
-        invent a pipeline or stage from a single conversation.
+        Nowmal can recognize one process across different people and companies, then infer its
+        current stages from source-backed mail. A single conversation never becomes a tracker.
       </Lede>
       {!items.length ? (
         <ConnectedEmpty
@@ -645,35 +655,87 @@ function ConnectedTrackersScreen() {
       ) : !grouped.length ? (
         <ConnectedEmpty
           title={`${items.length} ${items.length === 1 ? "item is" : "items are"} still independent`}
-          body="A workstream appears only when at least two obligations share a stable counterparty or one obligation is supported by several threads."
+          body="A tracker appears only when at least two obligations share a recognizable process or stable counterparty, with more than one source thread or participant."
         />
-      ) : (
-        <div className="connected-workstreams">
-          {grouped.map((group) => (
-            <article key={group.key}>
-              <header>
-                <div><strong>{group.name}</strong><small>{group.threadCount} source {group.threadCount === 1 ? "thread" : "threads"}</small></div>
-                <span>{group.openCount} open</span>
-              </header>
-              <div className="workstream-stats">
-                <span>{group.tasks} {group.tasks === 1 ? "task" : "tasks"}</span>
-                <span>{group.promises} {group.promises === 1 ? "promise" : "promises"}</span>
-                <span>{group.done} done</span>
-              </div>
-              <ul>
-                {group.items.slice(0, 4).map((item) => (
-                  <li key={item.id}>
-                    <StatusSquare status={statusSquare(item.status)} />
-                    <button type="button" onClick={() => patch({ view: item.kind === "task" ? "tasks" : "promises", openTaskId: item.kind === "task" ? item.id : null })}>
-                      <span>{item.title}</span><small>{itemStatusLabel(item.status)} · {formatDue(item.dueAt)}</small>
-                    </button>
-                  </li>
+      ) : selected ? <ConnectedTrackerView tracker={selected} trackers={grouped} onSelect={(key) => patch({ trackerId: key })} /> : null}
+    </div>
+  );
+}
+
+function ConnectedTrackerView({
+  tracker,
+  trackers,
+  onSelect,
+}: {
+  tracker: ConnectedTracker;
+  trackers: ConnectedTracker[];
+  onSelect: (key: string) => void;
+}) {
+  const { patch } = useDemoStore();
+  return (
+    <div className="connected-tracker">
+      <div className="tracker-tabs">
+        {trackers.map((candidate) => (
+          <button
+            key={candidate.key}
+            type="button"
+            className={candidate.key === tracker.key ? "active" : ""}
+            onClick={() => onSelect(candidate.key)}
+          >
+            {candidate.name} {candidate.entries.length}
+          </button>
+        ))}
+      </div>
+
+      <div className="tracker-title-row">
+        <h1>{tracker.name}</h1>
+        <span>{tracker.threadCount} source {tracker.threadCount === 1 ? "thread" : "threads"}</span>
+      </div>
+      <p className="tracker-note">{tracker.note} Stages change only when the indexed evidence changes.</p>
+
+      <div className="stage-rail">
+        {tracker.stages.map((stage, index) => (
+          <div key={stage}>
+            <span>{stage}</span>
+            <strong>{tracker.entries.filter((entry) => entry.stageIndex >= index + 1).length}</strong>
+          </div>
+        ))}
+      </div>
+
+      <div className="prospect-list connected-prospect-list">
+        {tracker.entries.map((entry) => (
+          <article key={entry.key}>
+            <button
+              type="button"
+              onClick={() => patch({
+                view: entry.primaryItem.kind === "task" ? "tasks" : "promises",
+                openTaskId: entry.primaryItem.kind === "task" ? entry.primaryItem.id : null,
+              })}
+            >
+              <span>
+                <strong>{entry.name}</strong>
+                <small>{entry.role}</small>
+                <p>{entry.signal}</p>
+              </span>
+              <span className="progress-track">
+                {tracker.stages.map((stage, index) => (
+                  <i
+                    key={stage}
+                    className={index + 1 < entry.stageIndex ? "passed" : index + 1 === entry.stageIndex ? "current" : ""}
+                  />
                 ))}
-              </ul>
-            </article>
-          ))}
-        </div>
-      )}
+              </span>
+              <span>
+                <strong>{entry.itemCount > 1 ? `${entry.itemCount} linked` : formatDue(entry.primaryItem.dueAt)}</strong>
+                <small>{tracker.stages[Math.min(entry.stageIndex - 1, tracker.stages.length - 1)]}</small>
+              </span>
+            </button>
+          </article>
+        ))}
+      </div>
+      <p className="connected-tracker-footnote">
+        {tracker.openCount} open · {tracker.tasks} {tracker.tasks === 1 ? "task" : "tasks"} · {tracker.promises} {tracker.promises === 1 ? "promise" : "promises"} · {tracker.done} done
+      </p>
     </div>
   );
 }
@@ -789,48 +851,4 @@ function formatMetadata(value: unknown) {
   if (Array.isArray(value)) return value.map(String).join(", ");
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
-}
-
-function groupWorkstreams(items: WorkspaceWorkItemSummary[]) {
-  const groups = new Map<string, WorkspaceWorkItemSummary[]>();
-  for (const item of items) {
-    const raw = typeof item.metadata.counterparty === "string"
-      ? item.metadata.counterparty.trim()
-      : "";
-    if (!raw) continue;
-    const key = raw.toLocaleLowerCase();
-    const group = groups.get(key) ?? [];
-    group.push(item);
-    groups.set(key, group);
-  }
-
-  return [...groups.entries()]
-    .map(([key, groupItems]) => {
-      const sourceThreads = new Set(
-        groupItems.flatMap((item) => item.evidence.map((evidence) => evidence.gmailThreadId)),
-      );
-      const metadataThreadCount = Math.max(
-        0,
-        ...groupItems.map((item) => typeof item.metadata.sourceThreadCount === "number" ? item.metadata.sourceThreadCount : 0),
-      );
-      const threadCount = Math.max(sourceThreads.size, metadataThreadCount);
-      const repeated = groupItems.length > 1 || threadCount > 1;
-      return {
-        key,
-        name: String(groupItems[0].metadata.counterparty),
-        items: [...groupItems].sort((left, right) => {
-          const leftDone = left.status === "done" ? 1 : 0;
-          const rightDone = right.status === "done" ? 1 : 0;
-          return leftDone - rightDone;
-        }),
-        threadCount,
-        repeated,
-        openCount: groupItems.filter((item) => item.status !== "done").length,
-        tasks: groupItems.filter((item) => item.kind === "task").length,
-        promises: groupItems.filter((item) => item.kind === "promise").length,
-        done: groupItems.filter((item) => item.status === "done").length,
-      };
-    })
-    .filter((group) => group.repeated)
-    .sort((left, right) => right.openCount - left.openCount || right.threadCount - left.threadCount);
 }

@@ -65,6 +65,16 @@ export interface AnalysisThreadRecord {
   messages: AnalysisMessageRecord[];
 }
 
+export interface AnalysisOpenWorkItemRecord {
+  id: string;
+  kind: "task" | "promise";
+  status: "needs_you" | "waiting" | "later";
+  title: string;
+  metadata: Record<string, unknown>;
+  sourceThreadIds: string[];
+  latestEvidenceAt: Date;
+}
+
 export interface ExtractedWorkItemRecord {
   kind: "task" | "promise";
   status: "needs_you" | "waiting" | "later";
@@ -220,16 +230,20 @@ export async function getThreadsForAnalysis(workspaceId: string, limit: number) 
         attributes: threads.attributes,
       })
       .from(threads)
-      .where(eq(threads.workspaceId, workspaceId))
+      .where(
+        and(
+          eq(threads.workspaceId, workspaceId),
+          sql`coalesce(${threads.attributes}->'analysis'->>'version', '') <> ${WORKSPACE_ANALYSIS_VERSION}`,
+        ),
+      )
       .orderBy(desc(threads.latestMessageAt))
       .limit(safeLimit),
   ]);
 
-  const pending = threadRows.filter((thread) => {
-    const analysis = analysisMetadata(thread.attributes);
-    return analysis?.version !== WORKSPACE_ANALYSIS_VERSION;
-  });
-  if (!pending.length) return { accountEmail: workspace?.email ?? "", threads: [] };
+  const pending = threadRows;
+  if (!pending.length) {
+    return { accountEmail: workspace?.email ?? "", threads: [], openItems: [] };
+  }
 
   const messageRows = await db
     .select({
@@ -260,12 +274,74 @@ export async function getThreadsForAnalysis(workspaceId: string, limit: number) 
     messagesByThread.set(message.threadId, group);
   }
 
+  const linkedItemRows = await db
+    .select({
+      id: workItems.id,
+      kind: workItems.kind,
+      status: workItems.status,
+      title: workItems.title,
+      metadata: workItems.metadata,
+      sourceThreadId: workItemThreads.threadId,
+    })
+    .from(workItemThreads)
+    .innerJoin(workItems, eq(workItemThreads.workItemId, workItems.id))
+    .where(
+      and(
+        eq(workItems.workspaceId, workspaceId),
+        inArray(workItemThreads.threadId, pending.map((thread) => thread.id)),
+        ne(workItems.status, "done"),
+        ne(workItems.status, "incorrect"),
+      ),
+    );
+  const linkedItemIds = [...new Set(linkedItemRows.map((item) => item.id))];
+  const itemEvidenceRows = linkedItemIds.length
+    ? await db
+        .select({ workItemId: evidenceSpans.workItemId, sentAt: messages.sentAt })
+        .from(evidenceSpans)
+        .innerJoin(messages, eq(evidenceSpans.messageId, messages.id))
+        .where(
+          and(
+            eq(messages.workspaceId, workspaceId),
+            inArray(evidenceSpans.workItemId, linkedItemIds),
+          ),
+        )
+    : [];
+  const latestEvidenceByItem = new Map<string, Date>();
+  for (const evidence of itemEvidenceRows) {
+    const current = latestEvidenceByItem.get(evidence.workItemId);
+    if (!current || evidence.sentAt > current) {
+      latestEvidenceByItem.set(evidence.workItemId, evidence.sentAt);
+    }
+  }
+  const openItemsById = new Map<string, AnalysisOpenWorkItemRecord>();
+  for (const item of linkedItemRows) {
+    const existing = openItemsById.get(item.id);
+    if (existing) {
+      if (!existing.sourceThreadIds.includes(item.sourceThreadId)) {
+        existing.sourceThreadIds.push(item.sourceThreadId);
+      }
+      continue;
+    }
+    const latestEvidenceAt = latestEvidenceByItem.get(item.id);
+    if (!latestEvidenceAt) continue;
+    openItemsById.set(item.id, {
+      id: item.id,
+      kind: item.kind,
+      status: item.status as AnalysisOpenWorkItemRecord["status"],
+      title: item.title,
+      metadata: item.metadata,
+      sourceThreadIds: [item.sourceThreadId],
+      latestEvidenceAt,
+    });
+  }
+
   return {
     accountEmail: workspace?.email ?? "",
     threads: pending.map((thread) => ({
       ...thread,
       messages: messagesByThread.get(thread.id) ?? [],
     })) satisfies AnalysisThreadRecord[],
+    openItems: [...openItemsById.values()],
   };
 }
 
@@ -900,6 +976,46 @@ export async function completeSendAttempt(input: {
   gmailThreadId?: string;
 }) {
   const db = getDb();
+  const [linkedItem] = await db
+    .select({
+      id: workItems.id,
+      workspaceId: workItems.workspaceId,
+      kind: workItems.kind,
+      status: workItems.status,
+    })
+    .from(nowDrafts)
+    .innerJoin(workItems, eq(nowDrafts.workItemId, workItems.id))
+    .where(eq(nowDrafts.id, input.draftId))
+    .limit(1);
+  let completedWorkItemId: string | undefined;
+  if (
+    linkedItem?.kind === "task"
+    && linkedItem.status !== "done"
+    && linkedItem.status !== "incorrect"
+  ) {
+    const [completed] = await db
+      .update(workItems)
+      .set({ status: "done", completedAt: new Date(), updatedAt: new Date() })
+      .where(
+        and(
+          eq(workItems.id, linkedItem.id),
+          eq(workItems.workspaceId, linkedItem.workspaceId),
+          ne(workItems.status, "done"),
+          ne(workItems.status, "incorrect"),
+        ),
+      )
+      .returning({ id: workItems.id });
+    if (completed) {
+      completedWorkItemId = completed.id;
+      await db.insert(userCorrections).values({
+        workspaceId: linkedItem.workspaceId,
+        kind: "work_item_completed_by_send",
+        targetId: linkedItem.id,
+        reason: "The approved Nowmal draft linked to this task was sent.",
+        features: { gmailMessageId: input.gmailMessageId },
+      });
+    }
+  }
   await db
     .update(nowDrafts)
     .set({ state: "sent", gmailMessageId: input.gmailMessageId, sentAt: new Date(), updatedAt: new Date() })
@@ -908,10 +1024,97 @@ export async function completeSendAttempt(input: {
     .update(auditEvents)
     .set({
       status: "succeeded",
-      payload: { gmailMessageId: input.gmailMessageId, gmailThreadId: input.gmailThreadId },
+      payload: {
+        gmailMessageId: input.gmailMessageId,
+        gmailThreadId: input.gmailThreadId,
+        ...(completedWorkItemId ? { completedWorkItemId } : {}),
+      },
       updatedAt: new Date(),
     })
     .where(eq(auditEvents.id, input.eventId));
+  return { completedWorkItemId };
+}
+
+export async function completeResolvedWorkItem(input: {
+  workspaceId: string;
+  workItemId: string;
+  gmailMessageId: string;
+  quote: string;
+  resolution: "fulfilled" | "cancelled";
+  confidence: number;
+}) {
+  const db = getDb();
+  const [source] = await db
+    .select({
+      messageId: messages.id,
+      threadId: messages.threadId,
+      itemKind: workItems.kind,
+      previousStatus: workItems.status,
+    })
+    .from(messages)
+    .innerJoin(workItemThreads, eq(messages.threadId, workItemThreads.threadId))
+    .innerJoin(workItems, eq(workItemThreads.workItemId, workItems.id))
+    .where(
+      and(
+        eq(messages.workspaceId, input.workspaceId),
+        eq(messages.gmailMessageId, input.gmailMessageId),
+        eq(workItems.workspaceId, input.workspaceId),
+        eq(workItems.id, input.workItemId),
+        ne(workItems.status, "done"),
+        ne(workItems.status, "incorrect"),
+      ),
+    )
+    .limit(1);
+  if (!source) return false;
+
+  const [completed] = await db
+    .update(workItems)
+    .set({ status: "done", completedAt: new Date(), updatedAt: new Date() })
+    .where(
+      and(
+        eq(workItems.id, input.workItemId),
+        eq(workItems.workspaceId, input.workspaceId),
+        ne(workItems.status, "done"),
+        ne(workItems.status, "incorrect"),
+      ),
+    )
+    .returning({ id: workItems.id });
+  if (!completed) return false;
+
+  const [existingEvidence] = await db
+    .select({ id: evidenceSpans.id })
+    .from(evidenceSpans)
+    .where(
+      and(
+        eq(evidenceSpans.workItemId, input.workItemId),
+        eq(evidenceSpans.messageId, source.messageId),
+        eq(evidenceSpans.quote, input.quote),
+      ),
+    )
+    .limit(1);
+  if (!existingEvidence) {
+    await db.insert(evidenceSpans).values({
+      workItemId: input.workItemId,
+      messageId: source.messageId,
+      quote: input.quote,
+    });
+  }
+  await db.insert(userCorrections).values({
+    workspaceId: input.workspaceId,
+    kind: "work_item_auto_completed",
+    targetId: input.workItemId,
+    reason: `A newer indexed message explicitly ${input.resolution === "fulfilled" ? "fulfilled" : "cancelled"} this item.`,
+    features: {
+      previousStatus: source.previousStatus,
+      nextStatus: "done",
+      kind: source.itemKind,
+      confidence: input.confidence,
+      resolution: input.resolution,
+      sourceMessageId: source.messageId,
+      sourceQuote: input.quote,
+    },
+  });
+  return true;
 }
 
 export async function markSendUncertain(eventId: string, draftId: string, reason: string) {

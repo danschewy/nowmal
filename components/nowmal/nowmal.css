@@ -1247,6 +1247,19 @@ a.action-button {
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
+.connected-tracker .tracker-title-row > span,
+.connected-tracker-footnote {
+  color: var(--ink-mute);
+  font-family: var(--machine);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.connected-tracker-footnote {
+  margin: 22px 0 0;
+  padding-top: 14px;
+  border-top: 1px dashed var(--hairline);
+}
 .tracker-note {
   margin-top: 16px;
   color: var(--ink-soft);

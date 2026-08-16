@@ -76,7 +76,7 @@ The default manual pull hydrates at most 300 threads; the server also enforces a
 
 Indexing and inference are separate operations. Gmail refresh never triggers inference. The connected Setup flow opens an explicit confirmation that states the pending-thread count, model-provider path, per-thread and per-message limits, and the operations that cannot occur. Only the confirmation action analyzes the stored bounded index. An already-connected account can run analysis without making another Gmail request.
 
-Analysis processes at most 100 pending threads in 16-thread batches with concurrency two. Each message body is truncated before model input, long threads contribute only their 12 most recent messages, and mailbox text is delimited and treated as untrusted data rather than instructions. The model can propose a work item, but persistence accepts it only when:
+Analysis processes at most 100 pending threads in 16-thread batches with concurrency two. The pending-version predicate runs in Neon before the 100-thread limit, so repeated confirmed passes advance through the whole bounded index instead of repeatedly selecting its already-analyzed newest slice. Each message body is truncated before model input, long threads contribute only their 12 most recent messages, and mailbox text is delimited and treated as untrusted data rather than instructions. The model can propose a work item, but persistence accepts it only when:
 
 - confidence is at least 0.76;
 - a task cites an inbound message or a promise cites an outbound message;
@@ -85,6 +85,8 @@ Analysis processes at most 100 pending threads in 16-thread batches with concurr
 - the due date, status, and bounded field shapes validate.
 
 The deterministic key combines analysis version, item kind, normalized counterparty, stable intent, and an occurrence key only for genuinely recurring work. Candidates with the same key merge before persistence, while `work_item_threads` and `evidence_spans` retain every validated source. A successful batch stamps its source threads with the analysis version; a later Gmail upsert removes that stamp, so only changed threads become pending again. Model or persistence failures leave the stamp absent and are safe to retry.
+
+Changed threads also carry their linked open items into the same confirmed analysis. Completion uses a stricter 0.90 confidence floor and is accepted only when the cited message belongs to a source thread, is newer than the item's latest evidence, contains the exact quoted text, and has the required direction: an outbound fulfillment or an inbound cancellation. Mere replies, acknowledgements, scheduling, and model omission cannot close work. The completion quote is appended as evidence and the transition is recorded. A successful approved Nowmal send is an even narrower deterministic case: it closes a linked task, but never a promise or an unrelated item.
 
 ## Task and grouping efficiency
 
@@ -96,13 +98,14 @@ The deterministic key combines analysis version, item kind, normalized counterpa
 - Clusters, trackers, and their entries have stable per-workspace keys so renames do not change identity.
 - Eve session IDs are stored separately from product records; agent conversation retention does not determine mailbox retention.
 
-The connected Trackers view intentionally starts one level below a guessed pipeline. It groups only
-when two obligations share the same normalized counterparty or when one obligation already has evidence
-from several Gmail threads. Those workstreams are computed from the bounded workspace snapshot, so the
-view adds no mailbox query. The snapshot's connection, counts, session, threads, work items, evidence,
-corrections, and drafts are issued as one Neon HTTP batch rather than a waterfall. Formal named trackers
-remain normalized in `trackers` and `tracker_entries`; they should be created only after a real repeated
-process supplies defensible stages.
+The connected Trackers view derives repeated processes from the bounded workspace snapshot, so it adds no
+mailbox query. Conservative domain classifiers can recognize a job search across different recruiters or
+a housing search across different properties, then map explicit mail language to the familiar process
+stages. At least two source-backed items and more than one thread or counterparty are required; a single
+conversation never becomes a tracker. Unclaimed items still group by repeated counterparty. The snapshot's
+connection, counts, session, threads, work items, evidence, corrections, and drafts are issued as one Neon
+HTTP batch rather than a waterfall. Formal user-named trackers remain normalized in `trackers` and
+`tracker_entries` for a later persistence layer.
 
 Connected Rules is a policy report, not a set of decorative client toggles. It describes the server
 boundaries that actually exist and reads the workspace's append-only correction count. The public
@@ -119,7 +122,8 @@ demo keeps interactive rule switches because it is explicitly a reversible produ
 5. An audit event reserves `(workspace_id, idempotency_key)` before Gmail is called.
 6. Gmail receives a deterministic RFC 5322 `Message-ID` derived from that key.
 7. Success stores the Gmail message ID. A repeated successful request returns `already_sent`.
-8. Any ambiguous failure becomes `uncertain`; the tool refuses to retry until a person reconciles Gmail Sent and creates a new draft if necessary.
+8. If the draft is linked to an open task, confirmed Gmail success marks that task done and records why.
+9. Any ambiguous failure becomes `uncertain`; the tool refuses to retry until a person reconciles Gmail Sent and creates a new draft if necessary.
 
 The separate Google scope is `https://www.googleapis.com/auth/gmail.send`; normal indexing uses `https://www.googleapis.com/auth/gmail.readonly`.
 

@@ -525,6 +525,71 @@ describe("Nowmal connected workspace", () => {
     expect(screen.getByText("2 source threads")).toBeTruthy();
   });
 
+  it("builds the connected Job Search tracker across different recruiters", async () => {
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      "nowmal.connected.v1",
+      JSON.stringify({ connected: true, threadCount: 3, view: "pipeline" }),
+    );
+    const workItems = [
+      ["mo", "Mo Al-Hashimy", "Send availability for a call", "Senior Full-Stack Engineer"],
+      ["grant", "Grant Seward", "Schedule time to connect", "BioTech opportunity"],
+      ["ankit", "Ankit M", "Reply about the AI engineer opportunity", "Fulltime Opportunity"],
+    ].map(([id, counterparty, title, subject]) => ({
+      id,
+      kind: "task",
+      status: "needs_you",
+      title,
+      dueAt: null,
+      confidence: 0.9,
+      metadata: { counterparty, summary: title },
+      evidence: [{
+        quote: title,
+        gmailMessageId: `message-${id}`,
+        gmailThreadId: `thread-${id}`,
+        subject,
+        sender: `${counterparty} <person@example.com>`,
+        sentAt: "2026-08-16T12:00:00.000Z",
+      }],
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            connected: true,
+            mailboxStatus: "connected",
+            threadCount: 3,
+            correctionCount: 0,
+            sendEnabled: false,
+            lastSyncedAt: "2026-08-16T12:00:00.000Z",
+            eveSessionId: null,
+            analysis: {
+              version: "tasks-promises-v1",
+              analyzedThreadCount: 3,
+              pendingThreadCount: 0,
+              workItemCount: 3,
+            },
+            workItems,
+            drafts: [],
+            threads: [],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      ),
+    );
+
+    render(<NowmalApp mode="connected" accountEmail="owner@example.com" />);
+
+    expect(await screen.findByRole("heading", { name: "Job Search" })).toBeTruthy();
+    expect(screen.getAllByText("Applied")).toHaveLength(2);
+    expect(screen.getByText("Interview")).toBeTruthy();
+    expect(screen.getByText("3 source threads")).toBeTruthy();
+    expect(screen.getByText("Mo Al-Hashimy")).toBeTruthy();
+    expect(screen.getByText("Grant Seward")).toBeTruthy();
+    expect(screen.getByText("Ankit M")).toBeTruthy();
+  });
+
   it("keeps the index available while asking for revoked Gmail access to be reviewed", async () => {
     window.localStorage.clear();
     window.localStorage.setItem(

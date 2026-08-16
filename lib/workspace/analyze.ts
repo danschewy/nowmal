@@ -2,9 +2,11 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import { product } from "@/lib/domain/config";
 import {
+  completeResolvedWorkItem,
   getThreadsForAnalysis,
   markThreadsAnalyzed,
   upsertExtractedWorkItem,
+  type AnalysisOpenWorkItemRecord,
   type AnalysisThreadRecord,
   type ExtractedWorkItemRecord,
 } from "@/lib/data/repository";
@@ -34,11 +36,24 @@ const rawCandidateSchema = z.object({
     .max(3),
 });
 
+const rawResolutionSchema = z.object({
+  workItemId: z.string().min(1).max(200),
+  gmailThreadId: z.string().min(1).max(200),
+  resolution: z.enum(["fulfilled", "cancelled"]),
+  confidence: z.number().min(0).max(1),
+  evidence: z.object({
+    gmailMessageId: z.string().min(1).max(200),
+    quote: z.string().min(8).max(500),
+  }),
+});
+
 const extractionSchema = z.object({
   candidates: z.array(rawCandidateSchema).max(64),
+  resolutions: z.array(rawResolutionSchema).max(64),
 });
 
 type RawCandidate = z.infer<typeof rawCandidateSchema>;
+type RawResolution = z.infer<typeof rawResolutionSchema>;
 
 interface ValidatedSource {
   threadId: string;
@@ -61,9 +76,18 @@ export interface ValidatedCandidate {
   sources: ValidatedSource[];
 }
 
+export interface ValidatedResolution {
+  workItemId: string;
+  gmailMessageId: string;
+  quote: string;
+  resolution: "fulfilled" | "cancelled";
+  confidence: number;
+}
+
 interface BatchResult {
   threads: AnalysisThreadRecord[];
   candidates: RawCandidate[];
+  resolutions: RawResolution[];
   error: string | null;
 }
 
@@ -87,7 +111,9 @@ export async function analyzeWorkspace(input: {
     return {
       analyzedThreads: 0,
       workItemsUpserted: 0,
+      workItemsCompleted: 0,
       rejectedCandidates: 0,
+      rejectedResolutions: 0,
       failedThreads: 0,
       alreadyCurrent: true,
     };
@@ -99,16 +125,20 @@ export async function analyzeWorkspace(input: {
     product.workspaceAnalysisConcurrency,
     async (threads): Promise<BatchResult> => {
       try {
-        const candidates = await inferBatch({
+        const output = await inferBatch({
           accountEmail: pending.accountEmail,
           threads,
+          openItems: pending.openItems.filter((item) =>
+            item.sourceThreadIds.some((threadId) => threads.some((thread) => thread.id === threadId)),
+          ),
           abortSignal: input.abortSignal,
         });
-        return { threads, candidates, error: null };
+        return { threads, ...output, error: null };
       } catch (cause) {
         return {
           threads,
           candidates: [],
+          resolutions: [],
           error: cause instanceof Error ? cause.message : "Analysis failed.",
         };
       }
@@ -121,19 +151,30 @@ export async function analyzeWorkspace(input: {
   }
 
   const rawCandidates = successful.flatMap((result) => result.candidates);
+  const rawResolutions = successful.flatMap((result) => result.resolutions);
   const successfulThreads = successful.flatMap((result) => result.threads);
   const validated = validateExtractionCandidates(successfulThreads, rawCandidates);
+  const resolutions = validateResolutionCandidates(
+    successfulThreads,
+    pending.openItems,
+    rawResolutions,
+  );
   const workItems = mergeValidatedCandidates(validated);
 
   await mapWithConcurrency(workItems, 4, (workItem) =>
     upsertExtractedWorkItem(input.workspaceId, workItem),
+  );
+  const completionResults = await mapWithConcurrency(resolutions, 4, (resolution) =>
+    completeResolvedWorkItem({ workspaceId: input.workspaceId, ...resolution }),
   );
   await markThreadsAnalyzed(input.workspaceId, successfulThreads);
 
   return {
     analyzedThreads: successfulThreads.length,
     workItemsUpserted: workItems.length,
+    workItemsCompleted: completionResults.filter(Boolean).length,
     rejectedCandidates: rawCandidates.length - validated.length,
+    rejectedResolutions: rawResolutions.length - resolutions.length,
     failedThreads: batchResults
       .filter((result) => result.error)
       .reduce((count, result) => count + result.threads.length, 0),
@@ -144,6 +185,7 @@ export async function analyzeWorkspace(input: {
 async function inferBatch(input: {
   accountEmail: string;
   threads: AnalysisThreadRecord[];
+  openItems: AnalysisOpenWorkItemRecord[];
   abortSignal?: AbortSignal;
 }) {
   const mailboxData = input.threads.map((thread) => ({
@@ -164,6 +206,21 @@ async function inferBatch(input: {
       ),
     })),
   }));
+  const gmailThreadIdByInternalId = new Map(
+    input.threads.map((thread) => [thread.id, thread.gmailThreadId]),
+  );
+  const openWorkItems = input.openItems.map((item) => ({
+    workItemId: item.id,
+    kind: item.kind,
+    status: item.status,
+    title: item.title,
+    counterparty: item.metadata.counterparty,
+    summary: item.metadata.summary,
+    latestEvidenceAt: item.latestEvidenceAt.toISOString(),
+    sourceGmailThreadIds: item.sourceThreadIds
+      .map((threadId) => gmailThreadIdByInternalId.get(threadId))
+      .filter((threadId): threadId is string => Boolean(threadId)),
+  }));
   const { output } = await generateText({
     model: product.workspaceAnalysisModel,
     output: Output.object({ schema: extractionSchema }),
@@ -182,17 +239,65 @@ Safety and evidence rules:
 - stableIntentKey must be a compact lowercase slug for the deliverable or decision, independent of email subject wording.
 - occurrenceKey is null for a one-off obligation. For genuinely recurring obligations, use an explicit supplied period such as 2026-08.
 - The same underlying obligation must receive the same stableIntentKey, counterparty, and occurrenceKey across threads.
-- Titles should be short, plain, and actionable.`,
+- Titles should be short, plain, and actionable.
+- A resolution may reference only a supplied open_work_item and one of its source Gmail threads.
+- Mark fulfilled only when a newer outbound message explicitly performs the requested task or promised action.
+- Mark cancelled only when a newer inbound message explicitly withdraws the request or says the action is no longer needed.
+- A reply, acknowledgement, scheduling discussion, or vague progress update is not completion.
+- Resolution evidence must be newer than latestEvidenceAt and quote the exact resolving language. Omit uncertain resolutions.`,
     prompt: `Mailbox owner: ${input.accountEmail}
 Current time: ${new Date().toISOString()}
 
 Analyze only this bounded batch and return unresolved tasks and promises.
 
+Existing open items are supplied only so you can identify explicit resolutions in newer messages:
+<open_work_items>
+${JSON.stringify(openWorkItems)}
+</open_work_items>
+
 <mailbox_data>
 ${JSON.stringify(mailboxData)}
 </mailbox_data>`,
   });
-  return output.candidates;
+  return output;
+}
+
+export function validateResolutionCandidates(
+  threads: AnalysisThreadRecord[],
+  openItems: AnalysisOpenWorkItemRecord[],
+  resolutions: RawResolution[],
+) {
+  const threadByGmailId = new Map(threads.map((thread) => [thread.gmailThreadId, thread]));
+  const openItemById = new Map(openItems.map((item) => [item.id, item]));
+  const acceptedByItem = new Map<string, ValidatedResolution>();
+
+  for (const resolution of resolutions) {
+    if (resolution.confidence < product.workspaceCompletionMinimumConfidence) continue;
+    const item = openItemById.get(resolution.workItemId);
+    const thread = threadByGmailId.get(resolution.gmailThreadId);
+    if (!item || !thread || !item.sourceThreadIds.includes(thread.id)) continue;
+    const message = thread.messages.find(
+      (candidate) => candidate.gmailMessageId === resolution.evidence.gmailMessageId,
+    );
+    if (!message || message.sentAt <= item.latestEvidenceAt) continue;
+    if (resolution.resolution === "fulfilled" && message.direction !== "outbound") continue;
+    if (resolution.resolution === "cancelled" && message.direction !== "inbound") continue;
+    const searchable = normalizeForMatch(normalizeEmailBody(`${message.bodyText}\n${message.snippet}`));
+    if (!searchable.includes(normalizeForMatch(resolution.evidence.quote))) continue;
+
+    const validated: ValidatedResolution = {
+      workItemId: item.id,
+      gmailMessageId: message.gmailMessageId,
+      quote: resolution.evidence.quote.trim(),
+      resolution: resolution.resolution,
+      confidence: resolution.confidence,
+    };
+    const current = acceptedByItem.get(item.id);
+    if (!current || validated.confidence > current.confidence) {
+      acceptedByItem.set(item.id, validated);
+    }
+  }
+  return [...acceptedByItem.values()];
 }
 
 export function validateExtractionCandidates(

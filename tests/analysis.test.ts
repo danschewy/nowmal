@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { AnalysisThreadRecord } from "@/lib/data/repository";
+import type {
+  AnalysisOpenWorkItemRecord,
+  AnalysisThreadRecord,
+} from "@/lib/data/repository";
 import {
   mergeValidatedCandidates,
   validateExtractionCandidates,
+  validateResolutionCandidates,
 } from "@/lib/workspace/analyze";
 import { normalizeEmailBody } from "@/lib/gmail/text";
 
@@ -153,5 +157,95 @@ describe("workspace analysis evidence boundary", () => {
     expect(merged).toHaveLength(1);
     expect(merged[0].sources).toHaveLength(2);
     expect(merged[0].metadata).toMatchObject({ sourceThreadCount: 2 });
+  });
+
+  it("accepts only newer exact evidence for an explicit work-item resolution", () => {
+    const changedThread = thread({
+      id: "thread-1",
+      gmailThreadId: "gmail-thread-1",
+      direction: "inbound",
+      messageId: "request-message",
+      body: "Could you send the signed scope?",
+      sentAt: "2026-08-15T12:00:00.000Z",
+    });
+    changedThread.messages.push({
+      id: "internal-reply-message",
+      gmailMessageId: "reply-message",
+      direction: "outbound",
+      sender: "owner@example.com",
+      recipients: ["alia@example.com"],
+      subject: "Re: Project update",
+      sentAt: new Date("2026-08-16T12:00:00.000Z"),
+      snippet: "Attached is the signed scope you requested.",
+      bodyText: "Attached is the signed scope you requested.",
+    });
+    const openItems: AnalysisOpenWorkItemRecord[] = [{
+      id: "work-item-1",
+      kind: "task",
+      status: "needs_you",
+      title: "Send Alia the signed scope",
+      metadata: { counterparty: "Alia" },
+      sourceThreadIds: ["thread-1"],
+      latestEvidenceAt: new Date("2026-08-15T12:00:00.000Z"),
+    }];
+
+    const resolutions = validateResolutionCandidates([changedThread], openItems, [
+      {
+        workItemId: "work-item-1",
+        gmailThreadId: "gmail-thread-1",
+        resolution: "fulfilled",
+        confidence: 0.97,
+        evidence: {
+          gmailMessageId: "reply-message",
+          quote: "Attached is the signed scope you requested",
+        },
+      },
+      {
+        workItemId: "work-item-1",
+        gmailThreadId: "gmail-thread-1",
+        resolution: "fulfilled",
+        confidence: 0.99,
+        evidence: {
+          gmailMessageId: "request-message",
+          quote: "Could you send the signed scope",
+        },
+      },
+    ]);
+
+    expect(resolutions).toEqual([{
+      workItemId: "work-item-1",
+      gmailMessageId: "reply-message",
+      quote: "Attached is the signed scope you requested",
+      resolution: "fulfilled",
+      confidence: 0.97,
+    }]);
+  });
+
+  it("rejects weak, cross-thread, or directionally invalid completion claims", () => {
+    const changedThread = thread({
+      id: "thread-1",
+      gmailThreadId: "gmail-thread-1",
+      direction: "inbound",
+      messageId: "new-inbound-message",
+      body: "Thanks for the update.",
+      sentAt: "2026-08-16T12:00:00.000Z",
+    });
+    const openItems: AnalysisOpenWorkItemRecord[] = [{
+      id: "work-item-1",
+      kind: "task",
+      status: "needs_you",
+      title: "Send Alia the signed scope",
+      metadata: {},
+      sourceThreadIds: ["different-thread"],
+      latestEvidenceAt: new Date("2026-08-15T12:00:00.000Z"),
+    }];
+
+    expect(validateResolutionCandidates([changedThread], openItems, [{
+      workItemId: "work-item-1",
+      gmailThreadId: "gmail-thread-1",
+      resolution: "fulfilled",
+      confidence: 0.99,
+      evidence: { gmailMessageId: "new-inbound-message", quote: "Thanks for the update" },
+    }])).toEqual([]);
   });
 });

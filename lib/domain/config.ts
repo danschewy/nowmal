@@ -15,4 +15,5 @@ export const product = {
   workspaceAnalysisMessagesPerThread: 12,
   workspaceAnalysisMaxMessageChars: 3_200,
   workspaceAnalysisMinimumConfidence: 0.76,
+  workspaceCompletionMinimumConfidence: 0.9,
 } as const;

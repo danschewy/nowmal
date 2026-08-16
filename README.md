@@ -15,8 +15,8 @@ Try the complete account-free product at [`/demo`](https://nowmal.vercel.app/dem
 ## Architecture at a glance
 
 1. **One product, two explicit data adapters.** `/demo` and `/workspace` share the same shell and interaction model. The demo is deterministic and local; the connected adapter is Clerk-authenticated and never substitutes sample data for an empty or failed private workspace.
-2. **Index first, analyze second.** Gmail sync stores at most 300 recent threads, then follows `historyId` incrementally. Analysis is a separate, user-confirmed, bounded model operation, so refreshing mail cannot silently create cost or mutate inferred work.
-3. **Evidence before automation.** Threads and messages are normalized once in Neon. Work items cite exact message spans, use deterministic dedupe keys, and retain append-only corrections, so the UI and Eve can explain why something exists.
+2. **Index first, analyze second.** Gmail sync stores at most 300 recent threads, then follows `historyId` incrementally. Analysis is a separate, user-confirmed, bounded model operation, so refreshing mail cannot silently create cost or mutate inferred work. Pending filtering happens in Neon before each 100-thread analysis limit, so repeated passes progress through the entire bounded index.
+3. **Evidence before automation.** Threads and messages are normalized once in Neon. Work items cite exact message spans, use deterministic dedupe keys, and retain append-only corrections. Confirmed analysis may close an item only with a newer exact quote that explicitly fulfills or cancels it; an approved Nowmal send closes only its directly linked task.
 4. **One canonical work queue.** A pure selector derives Now from drafts, tasks, promises, status, and due dates. Navigation counts and the focused screen therefore cannot drift into competing definitions of “needs attention.”
 5. **Narrow agent boundary.** Eve 0.38 is mounted into Next.js 16 through `withEve()`. Its tool set is typed and workspace-scoped; browser conversations are durable, Clerk-owned, and generation-versioned so an obsolete manifest or MCP session cannot replace the current web chat.
 6. **Human-gated sending.** Read and send consent are separate. A send requires a cleared stored draft, zero unresolved checks, matching idempotency key, current `gmail.send` scope, a durable Eve approval, and an audit reservation written before Gmail is called.
@@ -61,7 +61,7 @@ npm run db:migrate
 
 The exact account and deployment steps are in [External setup](./docs/EXTERNAL-SETUP.md). No credential is required to evaluate the public demo.
 
-The connected Setup flow separates three operations: Gmail indexing, task/promise analysis, and optional sending. Refreshing Gmail never starts model work. Before each analysis, a confirmation modal names the provider path and exact data bounds; analysis begins only after the user approves it. It reads only the bounded records already stored in Neon, never expands the Gmail window, and never grants send access.
+The connected Setup flow separates three operations: Gmail indexing, task/promise analysis, and optional sending. Refreshing Gmail never starts model work. Before each analysis, a confirmation modal names the provider path and exact data bounds; analysis begins only after the user approves it. It reads only the bounded records already stored in Neon, never expands the Gmail window, and never grants send access. Changed conversations can resolve old work during that confirmed pass, but only with newer source-backed completion or cancellation evidence.
 
 ## Product safety model
 

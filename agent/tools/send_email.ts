@@ -81,13 +81,19 @@ export default defineTool({
         body: record.draft.body,
         idempotencyKey,
       });
-      await completeSendAttempt({
+      const completion = await completeSendAttempt({
         eventId: reservation.event.id,
         draftId,
         gmailMessageId: result.id,
         gmailThreadId: result.threadId,
       });
-      return { status: "sent", draftId, gmailMessageId: result.id, gmailThreadId: result.threadId };
+      return {
+        status: "sent",
+        draftId,
+        gmailMessageId: result.id,
+        gmailThreadId: result.threadId,
+        ...completion,
+      };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown Gmail send failure";
       await markSendUncertain(reservation.event.id, draftId, message);
