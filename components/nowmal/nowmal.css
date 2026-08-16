@@ -410,7 +410,7 @@ a.action-button {
   overflow-y: auto;
 }
 
-.eve-message > div {
+.eve-speaker {
   color: rgba(242, 239, 231, 0.45);
   font-family: var(--machine);
   font-size: 8.5px;
@@ -430,9 +430,89 @@ a.action-button {
   color: rgba(242, 239, 231, 0.62);
 }
 
-.eve-message.from-you > div {
+.eve-message.from-you > .eve-speaker {
   color: rgba(242, 239, 231, 0.3);
 }
+
+.eve-markdown {
+  margin-top: 7px;
+  overflow-wrap: anywhere;
+}
+
+.eve-markdown > :first-child { margin-top: 0; }
+.eve-markdown > :last-child { margin-bottom: 0; }
+.eve-markdown p { margin: 0 0 10px; }
+.eve-markdown h1,
+.eve-markdown h2,
+.eve-markdown h3,
+.eve-markdown h4 {
+  margin: 18px 0 8px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+.eve-markdown h1 { font-size: 20px; }
+.eve-markdown h2 { font-size: 18px; }
+.eve-markdown h3,
+.eve-markdown h4 { font-size: 15px; }
+.eve-markdown ul,
+.eve-markdown ol {
+  margin: 9px 0 12px;
+  padding-left: 21px;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+.eve-markdown li + li { margin-top: 4px; }
+.eve-markdown li > p { margin: 0; }
+.eve-markdown blockquote {
+  margin: 12px 0;
+  padding-left: 13px;
+  border-left: 2px solid rgba(242, 239, 231, 0.35);
+  color: rgba(242, 239, 231, 0.72);
+}
+.eve-markdown a {
+  color: var(--bone);
+  text-decoration-color: rgba(242, 239, 231, 0.45);
+  text-underline-offset: 3px;
+}
+.eve-markdown code {
+  padding: 2px 4px;
+  background: rgba(242, 239, 231, 0.1);
+  font-family: var(--machine);
+  font-size: 0.82em;
+}
+.eve-markdown pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.eve-markdown pre code {
+  padding: 0;
+  background: transparent;
+  font-size: inherit;
+}
+.eve-markdown table {
+  display: block;
+  width: 100%;
+  margin: 12px 0;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-family: var(--machine);
+  font-size: 10px;
+}
+.eve-markdown th,
+.eve-markdown td {
+  padding: 7px 9px;
+  border: 1px solid rgba(242, 239, 231, 0.2);
+  text-align: left;
+  white-space: nowrap;
+}
+.eve-markdown th { background: rgba(242, 239, 231, 0.08); }
+.eve-markdown hr {
+  margin: 16px 0;
+  border: 0;
+  border-top: 1px solid rgba(242, 239, 231, 0.22);
+}
+.eve-markdown input[type="checkbox"] { accent-color: var(--moss); }
 
 .eve-message pre {
   margin: 12px 0 0;

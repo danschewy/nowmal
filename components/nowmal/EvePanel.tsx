@@ -4,6 +4,7 @@ import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 import { useEveAgent, type EveDynamicToolPart, type EveMessagePart } from "eve/react";
 import { EVE_SCRIPT } from "@/lib/demo/data";
 import { useDemoStore } from "@/lib/demo/store";
+import { EveMarkdown } from "./EveMarkdown";
 
 export function EvePanel({
   mode,
@@ -61,8 +62,8 @@ function DemoEvePanel() {
       <div className="eve-messages" ref={scrollRef} aria-live="polite">
         {state.messages.map((message) => (
           <article key={message.id} className={`eve-message ${message.who === "You" ? "from-you" : ""}`}>
-            <div>{message.who}</div>
-            <p>{message.text}</p>
+            <div className="eve-speaker">{message.who}</div>
+            {message.who === "Eve" ? <EveMarkdown>{message.text}</EveMarkdown> : <p>{message.text}</p>}
             {message.draft ? <pre>{message.draft}</pre> : null}
           </article>
         ))}
@@ -110,7 +111,7 @@ function ConnectedEvePanel({ initialSessionId }: { initialSessionId: string | nu
       <div className="eve-messages" ref={scrollRef} aria-live="polite">
         {!agent.data.messages.length ? (
           <article className="eve-message">
-            <div>Eve</div>
+            <div className="eve-speaker">Eve</div>
             <p>
               Ask what needs attention, search your indexed mail, or request a reply. I will show my
               sources, and I will stop for your approval before any sync or send.
@@ -120,12 +121,13 @@ function ConnectedEvePanel({ initialSessionId }: { initialSessionId: string | nu
 
         {agent.data.messages.map((message) => (
           <article key={message.id} className={`eve-message ${message.role === "user" ? "from-you" : ""}`}>
-            <div>{message.role === "user" ? "You" : "Eve"}</div>
+            <div className="eve-speaker">{message.role === "user" ? "You" : "Eve"}</div>
             {message.parts.map((part, index) => (
               <ConnectedPart
                 key={`${message.id}-${index}`}
                 part={part}
                 disabled={busy}
+                markdown={message.role !== "user"}
                 respond={agent.respond}
               />
             ))}
@@ -134,7 +136,7 @@ function ConnectedEvePanel({ initialSessionId }: { initialSessionId: string | nu
 
         {agent.error ? (
           <article className="eve-message eve-error">
-            <div>Could not continue</div>
+            <div className="eve-speaker">Could not continue</div>
             <p>{agent.error.message}</p>
           </article>
         ) : null}
@@ -154,13 +156,17 @@ function ConnectedEvePanel({ initialSessionId }: { initialSessionId: string | nu
 function ConnectedPart({
   part,
   disabled,
+  markdown,
   respond,
 }: {
   part: EveMessagePart;
   disabled: boolean;
+  markdown: boolean;
   respond: ReturnType<typeof useEveAgent>["respond"];
 }) {
-  if (part.type === "text") return <p>{part.text}</p>;
+  if (part.type === "text") {
+    return markdown ? <EveMarkdown>{part.text}</EveMarkdown> : <p>{part.text}</p>;
+  }
   if (part.type === "reasoning" || part.type === "step-start" || part.type === "file") return null;
 
   if (part.type === "authorization") {

@@ -967,7 +967,7 @@ export const EVE_SCRIPT: Record<
   },
   "What else is quiet?": {
     text:
-      "Meridian Freight, eleven days on an auto-acknowledgement. That one I would let go. Atlas is at three days and still inside the window they gave you.",
+      "Two other threads are quiet:\n\n- **Meridian Freight** — eleven days on an auto-acknowledgement. Let it go.\n- **Atlas** — three days and still inside its stated window.",
     chips: ["Draft a nudge", "Show me the pipeline"],
   },
   "Draft a reply": {

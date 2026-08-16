@@ -19,6 +19,16 @@ test("public demo exposes the full task and Eve shell without an account", async
   await expect(socialImage).toHaveAttribute("content", /\/og\.png$/);
 });
 
+test("Eve renders structured Markdown without an account", async ({ page }) => {
+  const eve = page.getByLabel("Eve assistant");
+  await eve.getByRole("textbox", { name: "Ask Eve about your inbox" }).fill("What else is quiet?");
+  await eve.getByRole("button", { name: "Ask" }).click();
+
+  await expect(eve.getByRole("list")).toBeVisible();
+  await expect(eve.locator("strong").filter({ hasText: "Meridian Freight" })).toBeVisible();
+  await expect(eve.getByText("Atlas", { exact: true })).toBeVisible();
+});
+
 test("Now requires the human gate before a send", async ({ page }) => {
   await page.getByRole("button", { name: /^Now\s*3$/i }).click();
   await expect(page.getByRole("button", { name: /Locked · 2 unanswered/i })).toBeDisabled();
