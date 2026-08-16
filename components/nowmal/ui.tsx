@@ -42,7 +42,7 @@ export function EmptyState({ onSetup }: { onSetup: () => void }) {
       <Eyebrow>Your workspace is empty</Eyebrow>
       <h1>Connect Gmail to see what needs your attention.</h1>
       <p>
-        Nowmal starts with up to 100 threads from the last 30 days and turns them into tasks,
+        Nowmal starts with up to 300 threads from the last 30 days and turns them into tasks,
         promises, and useful groups. The first connection is read-only; no email can be sent.
       </p>
       <ActionButton tone="solid" onClick={onSetup}>

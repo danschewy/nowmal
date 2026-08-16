@@ -43,7 +43,7 @@ export function ConnectedRulesScreen() {
   const policies = [
     {
       label: "Index recent Gmail",
-      description: "Runs only when you connect or refresh. The first pass is capped at 100 threads from 30 days; later passes ask Gmail only for changes.",
+      description: "Runs only when you connect or refresh. The first pass is capped at 300 threads from 30 days; later passes ask Gmail only for changes.",
       value: snapshot?.mailboxStatus === "reauthorization_required" ? "Review access" : "You choose",
     },
     {

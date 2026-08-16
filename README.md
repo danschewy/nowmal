@@ -13,7 +13,7 @@ The full product demo is public at `/demo` and needs no account. `/workspace` is
 - Clerk-scoped Eve session ownership persisted in Neon, with the latest durable web session resumed after reload instead of trusting a caller-supplied session ID.
 - Typed Eve tools for task queries, evidence, stash, thread search, Gmail sync, draft queuing, sourced check answers, and sending.
 - Clerk route identity and Google OAuth token brokerage.
-- Conservative initial Gmail sync (at most 100 threads from 30 days) and efficient incremental sync with Gmail `historyId` cursors.
+- Bounded initial Gmail sync (at most 300 threads from 30 days) and efficient incremental sync with Gmail `historyId` cursors.
 - An authenticated, bounded workspace snapshot that renders real indexed threads, work items, drafts, counts, and search results without ever falling back to public sample records.
 - A shared daily Now queue that puts draft approvals first, then every source-backed Needs-you item and any waiting or later work due within seven days; the screen and navigation count use the same selector.
 - A truthful connected policy screen that reports enforced server behavior and correction counts rather than reusing sample-only automation switches.

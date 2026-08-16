@@ -6,7 +6,7 @@ export const product = {
   gmailSendScope: "https://www.googleapis.com/auth/gmail.send",
   gmailInitialQuery: "newer_than:30d",
   gmailInitialWindowDays: 30,
-  gmailSyncDefaultMaxThreads: 100,
+  gmailSyncDefaultMaxThreads: 300,
   gmailSyncHardMaxThreads: 500,
   workspaceAnalysisModel: "openai/gpt-5.6-terra",
   workspaceAnalysisDefaultMaxThreads: 100,

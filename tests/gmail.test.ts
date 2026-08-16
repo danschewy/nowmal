@@ -70,24 +70,30 @@ describe("Gmail send construction", () => {
 });
 
 describe("Gmail ingestion bounds", () => {
-  it("stops the default first read at 100 threads from the last 30 days", async () => {
-    const threads = Array.from({ length: 100 }, (_, index) => ({ id: `thread-${index}` }));
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ threads, nextPageToken: "more-mail-exists" }), {
+  it("stops the default first read at 300 threads from the last 30 days", async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const requestUrl = new URL(String(input));
+      const page = requestUrl.searchParams.get("pageToken") ?? "page-1";
+      const offset = page === "page-1" ? 0 : page === "page-2" ? 100 : 200;
+      const threads = Array.from({ length: 100 }, (_, index) => ({ id: `thread-${offset + index}` }));
+      const nextPageToken = page === "page-1" ? "page-2" : page === "page-2" ? "page-3" : undefined;
+      return new Response(JSON.stringify({ threads, nextPageToken }), {
         status: 200,
         headers: { "content-type": "application/json" },
-      }),
-    );
+      });
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     const ids = await listRecentThreadIds("google-token");
 
-    expect(ids).toHaveLength(100);
-    expect(fetchMock).toHaveBeenCalledOnce();
-    const [url] = fetchMock.mock.calls[0] as [string];
-    const requestUrl = new URL(url);
-    expect(requestUrl.searchParams.get("q")).toBe("newer_than:30d");
-    expect(requestUrl.searchParams.get("maxResults")).toBe("100");
+    expect(ids).toHaveLength(300);
+    expect(new Set(ids).size).toBe(300);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    for (const [url] of fetchMock.mock.calls as [string][]) {
+      const requestUrl = new URL(url);
+      expect(requestUrl.searchParams.get("q")).toBe("newer_than:30d");
+      expect(requestUrl.searchParams.get("maxResults")).toBe("100");
+    }
   });
 
   it("keeps an explicit Gmail search to its requested result cap", async () => {

@@ -11,6 +11,7 @@ import {
 import { product } from "@/lib/domain/config";
 import {
   getMailboxStatus,
+  listIndexedGmailThreadIds,
   upsertGmailThread,
   upsertMailboxConnection,
   upsertWorkspace,
@@ -27,27 +28,40 @@ export async function syncGmailMailbox(input: {
   await upsertWorkspace({ id: input.workspaceId, email: profile.emailAddress, displayName: input.displayName });
 
   const current = await getMailboxStatus(input.workspaceId);
+  const maxThreads = input.maxThreads ?? product.gmailSyncDefaultMaxThreads;
   let threadIds: string[];
-  let mode: "initial" | "incremental" = "initial";
+  let mode: "initial" | "expanded" | "incremental" = "initial";
   try {
     if (current.connection?.historyId) {
       const changed = await listChangedThreadIds(
         input.accessToken,
         current.connection.historyId,
-        input.maxThreads ?? product.gmailSyncDefaultMaxThreads,
+        maxThreads,
       );
-      threadIds = changed.threadIds;
-      mode = "incremental";
+      if (current.threadCount < maxThreads) {
+        const recentIds = await listRecentThreadIds(input.accessToken, { maxThreads });
+        const indexedIds = new Set(
+          await listIndexedGmailThreadIds(input.workspaceId, recentIds),
+        );
+        threadIds = [...new Set([
+          ...changed.threadIds,
+          ...recentIds.filter((threadId) => !indexedIds.has(threadId)),
+        ])].slice(0, maxThreads);
+        mode = "expanded";
+      } else {
+        threadIds = changed.threadIds;
+        mode = "incremental";
+      }
     } else {
       threadIds = await listRecentThreadIds(input.accessToken, {
-        maxThreads: input.maxThreads ?? product.gmailSyncDefaultMaxThreads,
+        maxThreads,
       });
     }
   } catch (error) {
     // Gmail expires history cursors. A bounded 30-day rebuild is the correct recovery path.
     if (!(error instanceof Error) || !error.message.includes("Gmail API 404")) throw error;
     threadIds = await listRecentThreadIds(input.accessToken, {
-      maxThreads: input.maxThreads ?? product.gmailSyncDefaultMaxThreads,
+      maxThreads,
     });
   }
 

@@ -671,6 +671,24 @@ export async function listRecentThreads(workspaceId: string, limit = 10) {
     .limit(safeLimit);
 }
 
+export async function listIndexedGmailThreadIds(
+  workspaceId: string,
+  gmailThreadIds: string[],
+) {
+  if (!gmailThreadIds.length) return [];
+  const db = getDb();
+  const rows = await db
+    .select({ gmailThreadId: threads.gmailThreadId })
+    .from(threads)
+    .where(
+      and(
+        eq(threads.workspaceId, workspaceId),
+        inArray(threads.gmailThreadId, gmailThreadIds),
+      ),
+    );
+  return rows.map((row) => row.gmailThreadId);
+}
+
 export async function searchThreads(workspaceId: string, query: string, limit = 20) {
   const db = getDb();
   const safeLimit = Math.max(1, Math.min(limit, 50));

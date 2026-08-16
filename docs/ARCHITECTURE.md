@@ -36,7 +36,7 @@ Clerk is the smallest coherent choice here because the current Clerk SDK documen
 
 The web app, Eve chat, and MCP all resolve to the same Clerk user ID before touching a workspace. Eve chat authenticates a full request as a Clerk session instead of manually selecting a cookie. The MCP endpoint is a Clerk OAuth protected resource, so compatible clients can complete consent and receive a short-lived user token; Vercel OIDC remains an internal workload fallback. Every durable MCP invocation is therefore scoped to the same Neon workspace as the signed-in app.
 
-Gmail ingestion stays deliberately bounded: the first sync reads at most 100 recent threads and later refreshes use `historyId`. Connected Search queries the private index first. Only when that index has no match does an explicit user search ask Gmail for up to 10 exact matching conversations and add just those conversations to the index. This keeps long-tail mail discoverable without turning search into an unbounded mailbox import.
+Gmail ingestion stays deliberately bounded: the first sync reads at most 300 recent threads and later refreshes use `historyId`. Workspaces created under the earlier 100-thread limit expand toward 300 on their next explicit refresh; the expansion hydrates only thread IDs not already indexed. Connected Search queries the private index first. Only when that index has no match does an explicit user search ask Gmail for up to 10 exact matching conversations and add just those conversations to the index. This keeps long-tail mail discoverable without turning search into an unbounded mailbox import.
 
 ### Neon + Drizzle
 
@@ -70,7 +70,7 @@ Later pulls use the mailbox's Gmail `historyId` and request only `messageAdded` 
 
 Eve uses two deliberately separate read paths over that index. `list_recent_threads` performs a queryless, newest-first bounded read for recency questions. `search_threads` performs text matching for a person, subject, or topic. This prevents natural-language requests such as “latest email” from becoming literal full-text searches and falsely reporting an empty inbox.
 
-The default manual pull hydrates at most 100 threads; the server also enforces an absolute 500-thread ceiling for explicit maintenance calls. This controls Gmail quota, data ingestion, and server duration. The next deployment step for large inboxes is to place user-approved continuation batches on Vercel Workflow and connect Gmail watch notifications through Google Pub/Sub.
+The default manual pull hydrates at most 300 threads; the server also enforces an absolute 500-thread ceiling for explicit maintenance calls. Existing thread IDs are removed from expansion batches before Gmail hydration. This controls Gmail quota, data ingestion, and server duration. The next deployment step for large inboxes is to place user-approved continuation batches on Vercel Workflow and connect Gmail watch notifications through Google Pub/Sub.
 
 ## Task and promise analysis
 

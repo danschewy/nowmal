@@ -98,7 +98,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
   const permissions = [
     [
       "Read recent mail",
-      "Indexes up to 100 threads from the last 30 days. Older mail stays untouched.",
+      "Indexes up to 300 threads from the last 30 days. Older mail stays untouched.",
       "Included",
       readAuthorized,
       mailboxNeedsReview ? "Review" : "Included",
@@ -145,7 +145,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
         <Lede>
           {mailboxNeedsReview
             ? "Your indexed threads, tasks, and corrections remain available. Review the Google connection before the next refresh; Nowmal will not treat a revoked token as a healthy inbox."
-            : "Nowmal begins with up to 100 recent threads—enough to build a useful workspace without pulling your whole mailbox. Future refreshes fetch only what changed. Read access can never send, edit, or delete email."}
+            : "Nowmal begins with up to 300 recent threads—broad enough to make search and grouping useful without pulling your whole mailbox. Future refreshes fetch only what changed. Read access can never send, edit, or delete email."}
         </Lede>
 
         <section className="account-card">
@@ -154,7 +154,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
             <small>
               {mailboxNeedsReview
                 ? "Indexed data retained · Google access needs review"
-                : "Read-only · last 30 days · up to 100 recent threads"}
+                : "Read-only · last 30 days · up to 300 recent threads"}
               {" · "}{state.threadCount.toLocaleString()} indexed
             </small>
           </div>
