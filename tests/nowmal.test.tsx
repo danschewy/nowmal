@@ -581,6 +581,7 @@ describe("Nowmal connected workspace", () => {
 
     render(<NowmalApp mode="connected" accountEmail="owner@example.com" />);
 
+    expect(await screen.findByRole("button", { name: /^Trackers\s*1$/ })).toBeTruthy();
     expect(await screen.findByRole("heading", { name: "Job Search" })).toBeTruthy();
     expect(screen.getAllByText("Applied")).toHaveLength(2);
     expect(screen.getByText("Interview")).toBeTruthy();

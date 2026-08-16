@@ -6,6 +6,7 @@ import { product } from "@/lib/domain/config";
 import { useDemoStore } from "@/lib/demo/store";
 import type { View } from "@/lib/domain/types";
 import { selectConnectedNowQueue } from "@/lib/workspace/now-queue";
+import { buildConnectedTrackers } from "@/lib/workspace/workstreams";
 import { useWorkspaceData } from "./WorkspaceData";
 
 const primary: { view: View; label: string }[] = [
@@ -49,13 +50,16 @@ export function LeftRail({
   const nowCount = mode === "demo"
     ? Math.max(0, 3 - state.nowIndex)
     : selectConnectedNowQueue(snapshot).count;
+  const connectedTrackerCount = mode === "connected"
+    ? buildConnectedTrackers(snapshot?.workItems ?? []).length
+    : 0;
   const counts: Partial<Record<View, number>> = {
     brief: mode === "demo" ? (state.briefRead ? 0 : 6) : activeTasks + activePromises,
     now: nowCount,
     tasks: activeTasks,
     promises: activePromises,
-    pipeline: mode === "demo" ? state.trackersOn.length : 0,
-    mail: mode === "demo" ? 275 : state.threadCount,
+    pipeline: mode === "demo" ? state.trackersOn.length : connectedTrackerCount,
+    mail: mode === "demo" ? 275 : snapshot?.threadCount ?? state.threadCount,
   };
 
   const go = (view: View) => patch({ view, query: "", openThreadId: null });
