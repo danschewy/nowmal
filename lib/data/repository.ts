@@ -2,6 +2,7 @@ import { and, asc, desc, eq, ilike, inArray, ne, sql } from "drizzle-orm";
 import { getDb } from "./client";
 import {
   auditEvents,
+  agentSessions,
   draftChecks,
   evidenceSpans,
   mailboxConnections,
@@ -177,6 +178,40 @@ export async function getMailboxStatus(workspaceId: string) {
   return { connection: connection ?? null, threadCount: count };
 }
 
+export async function recordAgentSession(input: {
+  workspaceId: string;
+  surface: string;
+  eveSessionId: string;
+}) {
+  const db = getDb();
+  await db
+    .insert(agentSessions)
+    .values({ ...input, updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: [agentSessions.workspaceId, agentSessions.surface],
+      set: { eveSessionId: input.eveSessionId, updatedAt: new Date() },
+    });
+}
+
+export async function getAgentSessionOwner(eveSessionId: string) {
+  const db = getDb();
+  const [owner] = await db
+    .select({ workspaceId: agentSessions.workspaceId })
+    .from(agentSessions)
+    .where(eq(agentSessions.eveSessionId, eveSessionId))
+    .limit(1);
+  return owner?.workspaceId ?? null;
+}
+
+export async function getWorkspaceAgentSession(workspaceId: string) {
+  const db = getDb();
+  const session = await db.query.agentSessions.findFirst({
+    where: eq(agentSessions.workspaceId, workspaceId),
+    orderBy: desc(agentSessions.updatedAt),
+  });
+  return session?.eveSessionId ?? null;
+}
+
 export async function getThreadsForAnalysis(workspaceId: string, limit: number) {
   const db = getDb();
   const safeLimit = Math.max(1, Math.min(limit, 100));
@@ -344,10 +379,11 @@ export async function markThreadsAnalyzed(workspaceId: string, threadRows: Analy
 
 export async function getWorkspaceSnapshot(workspaceId: string): Promise<WorkspaceSnapshot> {
   const db = getDb();
-  const [connection, counts, itemCounts, threadRows, itemRows, evidenceRows, draftRows] = await Promise.all([
+  const [connection, eveSessionId, counts, itemCounts, threadRows, itemRows, evidenceRows, draftRows] = await Promise.all([
     db.query.mailboxConnections.findFirst({
       where: eq(mailboxConnections.workspaceId, workspaceId),
     }),
+    getWorkspaceAgentSession(workspaceId),
     db
       .select({
         count: sql<number>`count(*)::int`,
@@ -440,6 +476,7 @@ export async function getWorkspaceSnapshot(workspaceId: string): Promise<Workspa
     threadCount: counts[0]?.count ?? 0,
     sendEnabled: connection?.sendEnabled ?? false,
     lastSyncedAt: connection?.lastSyncedAt?.toISOString() ?? null,
+    eveSessionId,
     analysis: {
       version: WORKSPACE_ANALYSIS_VERSION,
       analyzedThreadCount: counts[0]?.analyzedCount ?? 0,

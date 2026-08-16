@@ -24,6 +24,8 @@ The private assistant panel uses Eve's `useEveAgent` client on the same origin. 
 turns and renders approval requests in place, so the approval shown beside a proposed send is the
 actual Eve input request—not a second client-only confirmation.
 
+Eve route authentication and Eve session ownership are separate boundaries. Clerk verifies every browser request. A `session.started` hook records the authenticated owner and session ID in Neon; every later ID-addressed message, stream, cancel, compact, clear, or reset request must match that owner. The workspace snapshot returns only the caller's latest mapped session, and the React client resumes its stream from the beginning after reload. Unknown and cross-account session IDs fail closed.
+
 ## Decisions
 
 ### Clerk over Neon Auth
@@ -104,7 +106,7 @@ The separate Google scope is `https://www.googleapis.com/auth/gmail.send`; norma
 ## Trust boundaries
 
 - Browser → Next APIs: Clerk session, checked again beside each resource mutation.
-- Browser → Eve HTTP channel: Clerk bearer/session verification; production fails closed without it.
+- Browser → Eve HTTP channel: Clerk bearer/session verification plus Neon-backed session ownership on every ID-addressed route; production fails closed without both.
 - Same-project Vercel services/MCP → Eve: Vercel OIDC. User-scoped Gmail sends remain available
   only in an authenticated Clerk user session; a service identity cannot impersonate a mailbox owner.
 - Eve → Gmail: user-scoped Clerk provider token with required-scope verification.

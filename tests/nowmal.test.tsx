@@ -79,6 +79,7 @@ describe("Nowmal connected workspace", () => {
             threadCount: 1,
             sendEnabled: false,
             lastSyncedAt: "2026-08-16T12:00:00.000Z",
+            eveSessionId: null,
             analysis: {
               version: "tasks-promises-v1",
               analyzedThreadCount: 1,
@@ -143,6 +144,7 @@ describe("Nowmal connected workspace", () => {
             threadCount: 1,
             sendEnabled: false,
             lastSyncedAt: "2026-08-16T12:00:00.000Z",
+            eveSessionId: null,
             analysis: {
               version: "tasks-promises-v1",
               analyzedThreadCount: analyzed ? 1 : 0,

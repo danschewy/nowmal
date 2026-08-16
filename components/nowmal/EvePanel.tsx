@@ -5,8 +5,23 @@ import { useEveAgent, type EveDynamicToolPart, type EveMessagePart } from "eve/r
 import { EVE_SCRIPT } from "@/lib/demo/data";
 import { useDemoStore } from "@/lib/demo/store";
 
-export function EvePanel({ mode }: { mode: "demo" | "connected" }) {
-  return mode === "connected" ? <ConnectedEvePanel /> : <DemoEvePanel />;
+export function EvePanel({
+  mode,
+  initialSessionId,
+  workspaceReady,
+}: {
+  mode: "demo" | "connected";
+  initialSessionId: string | null;
+  workspaceReady: boolean;
+}) {
+  if (mode === "demo") return <DemoEvePanel />;
+  if (!workspaceReady) return <PanelFrame status="Loading your workspace" />;
+  return (
+    <ConnectedEvePanel
+      key={initialSessionId ?? "new-session"}
+      initialSessionId={initialSessionId}
+    />
+  );
 }
 
 function DemoEvePanel() {
@@ -63,10 +78,13 @@ function DemoEvePanel() {
   );
 }
 
-function ConnectedEvePanel() {
+function ConnectedEvePanel({ initialSessionId }: { initialSessionId: string | null }) {
   const { state, patch, notify } = useDemoStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   const agent = useEveAgent({
+    initialSession: initialSessionId
+      ? { sessionId: initialSessionId, streamIndex: 0 }
+      : undefined,
     prepareSend: (input) => ({
       ...input,
       clientContext: { surface: "nowmal-web", view: state.view },
@@ -207,7 +225,7 @@ function toolState(part: EveDynamicToolPart) {
   }
 }
 
-function PanelFrame({ children, status }: { children: ReactNode; status: string }) {
+function PanelFrame({ children, status }: { children?: ReactNode; status: string }) {
   return (
     <aside className="eve-panel" aria-label="Eve assistant">
       <header className="eve-header">

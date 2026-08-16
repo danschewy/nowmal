@@ -66,7 +66,11 @@ function NowmalShell({
           <CurrentScreen mode={mode} accountEmail={accountEmail} />
         )}
       </section>
-      <EvePanel mode={mode} />
+      <EvePanel
+        mode={mode}
+        initialSessionId={snapshot?.eveSessionId ?? null}
+        workspaceReady={mode === "demo" || Boolean(snapshot)}
+      />
       <Toast />
     </main>
   );

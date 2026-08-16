@@ -10,6 +10,7 @@ The full product demo is public at `/demo` and needs no account. `/workspace` is
 - Real task evidence, dedupe lineage, stashed fields, corrections, snoozing, pull cadence, trackers, clusters, draft gates, undo, and a persistent Eve panel in the public demo.
 - A filesystem-first Eve 0.38 agent mounted into Next.js 16 with `withEve()`, with the private
   assistant panel connected through Eve's streaming React client.
+- Clerk-scoped Eve session ownership persisted in Neon, with the latest durable web session resumed after reload instead of trusting a caller-supplied session ID.
 - Typed Eve tools for task queries, evidence, stash, thread search, Gmail sync, draft queuing, sourced check answers, and sending.
 - Clerk route identity and Google OAuth token brokerage.
 - Conservative initial Gmail sync (at most 100 threads from 30 days) and efficient incremental sync with Gmail `historyId` cursors.

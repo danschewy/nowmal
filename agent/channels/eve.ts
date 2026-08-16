@@ -2,11 +2,14 @@ import { verifyToken } from "@clerk/backend";
 import { eveChannel } from "eve/channels/eve";
 import {
   extractBearerToken,
+  ForbiddenError,
   localDev,
   vercelOidc,
   withAuthChallenges,
   type AuthFn,
 } from "eve/channels/auth";
+import { isDatabaseConfigured } from "../../lib/data/client";
+import { getAgentSessionOwner } from "../../lib/data/repository";
 
 function clerkSession(): AuthFn<Request> {
   return withAuthChallenges(async (request) => {
@@ -28,6 +31,13 @@ function clerkSession(): AuthFn<Request> {
           ? [process.env.NEXT_PUBLIC_APP_URL]
           : undefined,
       });
+      const requestedSessionId = sessionIdFromRequest(request);
+      if (requestedSessionId && isDatabaseConfigured()) {
+        const ownerId = await getAgentSessionOwner(requestedSessionId);
+        if (!ownerId || ownerId !== payload.sub) {
+          throw new ForbiddenError({ message: "This Eve session is not available to this account." });
+        }
+      }
       return {
         authenticator: "clerk",
         principalId: payload.sub,
@@ -35,7 +45,8 @@ function clerkSession(): AuthFn<Request> {
         issuer: payload.iss,
         attributes: { sessionId: payload.sid },
       };
-    } catch {
+    } catch (cause) {
+      if (cause instanceof ForbiddenError) throw cause;
       return null;
     }
   }, [{ scheme: "Bearer" }]);
@@ -44,3 +55,8 @@ function clerkSession(): AuthFn<Request> {
 export default eveChannel({
   auth: [clerkSession(), vercelOidc(), localDev()],
 });
+
+export function sessionIdFromRequest(request: Request) {
+  const match = new URL(request.url).pathname.match(/\/eve\/v1\/session\/([^/]+)/);
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
+}

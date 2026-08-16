@@ -45,6 +45,7 @@ export interface WorkspaceSnapshot {
   threadCount: number;
   sendEnabled: boolean;
   lastSyncedAt: string | null;
+  eveSessionId: string | null;
   analysis: AnalysisProgress;
   workItems: WorkspaceWorkItemSummary[];
   threads: WorkspaceThreadSummary[];
