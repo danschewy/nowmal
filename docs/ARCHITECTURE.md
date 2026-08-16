@@ -64,6 +64,8 @@ The initial pull uses Gmail's search query `newer_than:30d`, stops after 100 thr
 
 Later pulls use the mailbox's Gmail `historyId` and request only `messageAdded` changes. An expired history cursor returns 404; the safe recovery is the same bounded 30-day rebuild. Search text is materialized once per thread and GIN-indexed, so search does not repeatedly concatenate messages.
 
+Eve uses two deliberately separate read paths over that index. `list_recent_threads` performs a queryless, newest-first bounded read for recency questions. `search_threads` performs text matching for a person, subject, or topic. This prevents natural-language requests such as “latest email” from becoming literal full-text searches and falsely reporting an empty inbox.
+
 The default manual pull hydrates at most 100 threads; the server also enforces an absolute 500-thread ceiling for explicit maintenance calls. This controls Gmail quota, data ingestion, and server duration. The next deployment step for large inboxes is to place user-approved continuation batches on Vercel Workflow and connect Gmail watch notifications through Google Pub/Sub.
 
 ## Task and promise analysis

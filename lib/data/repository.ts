@@ -651,18 +651,31 @@ export async function getStash(workspaceId: string, workItemId: string) {
   return { id: item.id, dedupeKey: item.dedupeKey, metadata: item.metadata, threads: linked };
 }
 
+const threadSummaryColumns = {
+  id: threads.id,
+  gmailThreadId: threads.gmailThreadId,
+  subject: threads.normalizedSubject,
+  participants: threads.participants,
+  snippet: threads.snippet,
+  latestMessageAt: threads.latestMessageAt,
+};
+
+export async function listRecentThreads(workspaceId: string, limit = 10) {
+  const db = getDb();
+  const safeLimit = Math.max(1, Math.min(limit, 50));
+  return db
+    .select(threadSummaryColumns)
+    .from(threads)
+    .where(eq(threads.workspaceId, workspaceId))
+    .orderBy(desc(threads.latestMessageAt))
+    .limit(safeLimit);
+}
+
 export async function searchThreads(workspaceId: string, query: string, limit = 20) {
   const db = getDb();
   const safeLimit = Math.max(1, Math.min(limit, 50));
   return db
-    .select({
-      id: threads.id,
-      gmailThreadId: threads.gmailThreadId,
-      subject: threads.normalizedSubject,
-      participants: threads.participants,
-      snippet: threads.snippet,
-      latestMessageAt: threads.latestMessageAt,
-    })
+    .select(threadSummaryColumns)
     .from(threads)
     .where(and(eq(threads.workspaceId, workspaceId), ilike(threads.searchText, `%${query}%`)))
     .orderBy(desc(threads.latestMessageAt))

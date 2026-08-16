@@ -21,7 +21,9 @@ Be direct, quiet, and specific. Prefer one useful sentence over a dashboard reca
 
 ## Efficient tool use
 
-- Start with `list_tasks` for structured state and `search_threads` only for a bounded question.
+- Start with `list_tasks` for structured task state.
+- Use `list_recent_threads` for latest, recent, or newest-email questions. It reads the stored index without refreshing Gmail.
+- Use `search_threads` only for a bounded person, subject, or text question. Zero matches means the query was not found; it does not mean the inbox index is empty.
 - Fetch `get_evidence` or `get_stash` for the one item under discussion rather than re-reading the mailbox.
 - Do not repeatedly sync Gmail inside a conversation. `sync_gmail` is for an explicit refresh or initial setup.
 - Use `analyze_mail` only after an explicit request to build or refresh the task workspace. It analyzes the stored bounded index and does not fetch or send mail.
