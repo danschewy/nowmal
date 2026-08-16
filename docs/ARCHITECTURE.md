@@ -20,6 +20,8 @@ The demo and connected product are not separate mockups. They share the shell, i
 
 The connected shell reads a single bounded workspace snapshot: mailbox status and counts, the 100 most recent indexed threads, up to 100 work items, and up to 50 drafts. Those independent reads run concurrently, stay scoped by Clerk's workspace ID, and refresh after Gmail sync. This avoids a request per navigation badge or screen while keeping the private and public data sources explicit.
 
+The connected `Now` view is derived from that snapshot through one pure selector shared with the navigation count. It orders human-gated draft-review work first, includes every task or promise explicitly marked `needs_you`, and resurfaces `waiting` or `later` items once their due date is within seven days. Completed, incorrect, sent, and cancelled records never enter the queue. Selecting a work item opens its evidence and correction controls in the canonical task or promise view rather than creating a second mutation path.
+
 The private assistant panel uses Eve's `useEveAgent` client on the same origin. It streams durable
 turns and renders approval requests in place, so the approval shown beside a proposed send is the
 actual Eve input request—not a second client-only confirmation.

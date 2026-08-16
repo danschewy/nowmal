@@ -8,6 +8,10 @@ import type {
   WorkspaceThreadSummary,
   WorkspaceWorkItemSummary,
 } from "@/lib/workspace/snapshot";
+import {
+  NOW_DUE_SOON_DAYS,
+  selectConnectedNowQueue,
+} from "@/lib/workspace/now-queue";
 import { useWorkspaceData } from "./WorkspaceData";
 import { ActionButton, Eyebrow, Lede, PageHeading, SectionLabel, StatusSquare } from "./ui";
 
@@ -349,24 +353,79 @@ function ConnectedItemsScreen({ kind }: { kind: "task" | "promise" }) {
 
 function ConnectedNowScreen() {
   const { snapshot } = useWorkspaceData();
-  const drafts = snapshot?.drafts ?? [];
-  const active = drafts.filter((draft) => !["sent", "cancelled"].includes(draft.state));
+  const { patch } = useDemoStore();
+  const queue = selectConnectedNowQueue(snapshot);
+  const needsYouCount = queue.workItems.filter((item) => item.status === "needs_you").length;
+  const dueSoonCount = queue.workItems.length - needsYouCount;
 
   return (
     <div className="screen">
       <div className="screen-inner-800">
-        <Eyebrow>Now · real drafts from your workspace</Eyebrow>
-        <PageHeading>{active.length ? `${active.length} ${active.length === 1 ? "draft" : "drafts"} waiting for review.` : "No drafts are waiting."}</PageHeading>
-        {!active.length ? (
-          <ConnectedEmpty
-            title="Nothing needs approval"
-            body="Ask Eve to prepare a reply. Drafting does not grant permission to send it."
-          />
-        ) : (
-          <div className="connected-draft-list">
-            {active.map((draft) => <ConnectedDraft key={draft.id} draft={draft} />)}
+        <Eyebrow>Now · your daily action queue</Eyebrow>
+        <PageHeading>
+          {queue.count
+            ? `${queue.count} ${queue.count === 1 ? "item needs" : "items need"} your attention.`
+            : "You are caught up."}
+        </PageHeading>
+        <Lede>
+          Drafts waiting for review come first. Then Nowmal brings forward every source-backed
+          task or promise marked Needs you, plus waiting or later work due within {NOW_DUE_SOON_DAYS} days.
+        </Lede>
+
+        {queue.count ? (
+          <div className="now-queue-summary" aria-label="Now queue summary">
+            <div><strong>{queue.drafts.length}</strong><span>Drafts to review</span></div>
+            <div><strong>{needsYouCount}</strong><span>Need you</span></div>
+            <div><strong>{dueSoonCount}</strong><span>Due soon</span></div>
           </div>
-        )}
+        ) : null}
+
+        {!queue.count ? (
+          <ConnectedEmpty
+            title="Nothing needs your attention"
+            body="No draft is waiting for review, and no source-backed task or promise is actionable or due soon."
+          />
+        ) : null}
+
+        {queue.drafts.length ? (
+          <section className="now-queue-section">
+            <SectionLabel right={`${queue.drafts.length} ${queue.drafts.length === 1 ? "draft" : "drafts"}`}>
+              Review before anything can send
+            </SectionLabel>
+            <div className="connected-draft-list">
+              {queue.drafts.map((draft) => <ConnectedDraft key={draft.id} draft={draft} />)}
+            </div>
+          </section>
+        ) : null}
+
+        {queue.workItems.length ? (
+          <section className="now-queue-section">
+            <SectionLabel right={`${queue.workItems.length} source-backed`}>
+              Work to act on
+            </SectionLabel>
+            <div className="now-work-list">
+              {queue.workItems.map((item) => (
+                <article key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => patch({
+                      view: item.kind === "task" ? "tasks" : "promises",
+                      openTaskId: item.id,
+                    })}
+                  >
+                    <StatusSquare status={statusSquare(item.status)} />
+                    <span>
+                      <small>{item.kind} · {itemStatusLabel(item.status)}</small>
+                      <strong>{item.title}</strong>
+                      <span>{item.evidence.length} verified {item.evidence.length === 1 ? "source" : "sources"}</span>
+                    </span>
+                    <span>{formatDue(item.dueAt)}</span>
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </div>
     </div>
   );

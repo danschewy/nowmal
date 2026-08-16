@@ -5,6 +5,7 @@ import { TASKS } from "@/lib/demo/data";
 import { product } from "@/lib/domain/config";
 import { useDemoStore } from "@/lib/demo/store";
 import type { View } from "@/lib/domain/types";
+import { selectConnectedNowQueue } from "@/lib/workspace/now-queue";
 import { useWorkspaceData } from "./WorkspaceData";
 
 const primary: { view: View; label: string }[] = [
@@ -45,12 +46,12 @@ export function LeftRail({
     : snapshot?.workItems.filter(
         (item) => item.kind === "promise" && item.status !== "done" && item.status !== "incorrect",
       ).length ?? 0;
-  const activeDrafts = mode === "demo"
+  const nowCount = mode === "demo"
     ? Math.max(0, 3 - state.nowIndex)
-    : snapshot?.drafts.filter((draft) => !["sent", "cancelled"].includes(draft.state)).length ?? 0;
+    : selectConnectedNowQueue(snapshot).count;
   const counts: Partial<Record<View, number>> = {
     brief: mode === "demo" ? (state.briefRead ? 0 : 6) : activeTasks + activePromises,
-    now: activeDrafts,
+    now: nowCount,
     tasks: activeTasks,
     promises: activePromises,
     pipeline: mode === "demo" ? state.trackersOn.length : 0,

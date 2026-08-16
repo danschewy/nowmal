@@ -15,6 +15,7 @@ The full product demo is public at `/demo` and needs no account. `/workspace` is
 - Clerk route identity and Google OAuth token brokerage.
 - Conservative initial Gmail sync (at most 100 threads from 30 days) and efficient incremental sync with Gmail `historyId` cursors.
 - An authenticated, bounded workspace snapshot that renders real indexed threads, work items, drafts, counts, and search results without ever falling back to public sample records.
+- A shared daily Now queue that puts draft approvals first, then every source-backed Needs-you item and any waiting or later work due within seven days; the screen and navigation count use the same selector.
 - A truthful connected policy screen that reports enforced server behavior and correction counts rather than reusing sample-only automation switches.
 - Source-backed workstream grouping that promotes only repeated counterparties or multi-thread obligations and refuses to invent pipeline stages from a single conversation.
 - Bounded AI analysis of the stored index in 16-thread batches, with prompt-injection isolation, exact-quote validation, deterministic dedupe keys, incremental re-analysis, and append-only user corrections.

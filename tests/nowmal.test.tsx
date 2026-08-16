@@ -115,6 +115,75 @@ describe("Nowmal connected workspace", () => {
     expect(screen.queryByText("Panel scheduling and references")).toBeNull();
   });
 
+  it("puts source-backed needs-you work in Now even when no draft exists", async () => {
+    const user = userEvent.setup();
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      "nowmal.connected.v1",
+      JSON.stringify({ connected: true, threadCount: 1, view: "now" }),
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            connected: true,
+            mailboxStatus: "connected",
+            threadCount: 1,
+            correctionCount: 0,
+            sendEnabled: false,
+            lastSyncedAt: "2026-08-16T12:00:00.000Z",
+            eveSessionId: null,
+            analysis: {
+              version: "tasks-promises-v1",
+              analyzedThreadCount: 1,
+              pendingThreadCount: 0,
+              workItemCount: 1,
+            },
+            workItems: [
+              {
+                id: "item-needs-you",
+                kind: "task",
+                status: "needs_you",
+                title: "Send the requested project summary",
+                dueAt: null,
+                confidence: 0.94,
+                metadata: { counterparty: "Northline" },
+                evidence: [
+                  {
+                    quote: "Could you send the project summary?",
+                    gmailMessageId: "message-1",
+                    gmailThreadId: "thread-1",
+                    subject: "Project summary",
+                    sender: "person@example.com",
+                    sentAt: "2026-08-16T12:00:00.000Z",
+                  },
+                ],
+              },
+            ],
+            drafts: [],
+            threads: [],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      ),
+    );
+
+    render(<NowmalApp mode="connected" accountEmail="owner@example.com" />);
+
+    expect(
+      await screen.findByRole("heading", { name: "1 item needs your attention." }),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Now\s*1$/i })).toBeTruthy();
+    await user.click(
+      screen.getByRole("button", { name: /Send the requested project summary/i }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Requests and follow-ups found in your mail." }),
+    ).toBeTruthy();
+    expect(screen.getByText("Evidence from Gmail")).toBeTruthy();
+  });
+
   it("confirms bounded model use before analyzing the stored Gmail index", async () => {
     const user = userEvent.setup();
     window.localStorage.clear();

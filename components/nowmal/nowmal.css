@@ -1613,6 +1613,79 @@ a.action-button {
   margin-top: 34px;
 }
 
+.now-queue-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 30px;
+  border: 1px solid var(--hairline);
+  background: var(--paper);
+}
+
+.now-queue-summary > div {
+  display: grid;
+  gap: 7px;
+  padding: 16px 18px;
+  border-left: 1px solid var(--hairline);
+}
+
+.now-queue-summary > div:first-child { border-left: 0; }
+.now-queue-summary strong { font-size: 23px; font-weight: 500; }
+.now-queue-summary span {
+  color: var(--ink-mute);
+  font-family: var(--machine);
+  font-size: 8px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.now-queue-section { margin-top: 38px; }
+.now-queue-section .connected-draft-list { margin-top: 18px; }
+
+.now-work-list { margin-top: 4px; }
+.now-work-list article { border-bottom: 1px solid var(--hairline); }
+.now-work-list article > button {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  padding: 17px 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.now-work-list article > button:hover strong { border-bottom-color: var(--ink); }
+.now-work-list .status-square { align-self: start; margin-top: 4px; }
+.now-work-list article > button > span:nth-child(2) { display: grid; gap: 6px; }
+.now-work-list small,
+.now-work-list article > button > span:last-child,
+.now-work-list article > button > span:nth-child(2) > span {
+  color: var(--ink-mute);
+  font-family: var(--machine);
+  font-size: 8.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.now-work-list strong {
+  justify-self: start;
+  border-bottom: 1px solid transparent;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+  .now-queue-summary { grid-template-columns: 1fr; }
+  .now-queue-summary > div { border-top: 1px solid var(--hairline); border-left: 0; }
+  .now-queue-summary > div:first-child { border-top: 0; }
+  .now-work-list article > button { grid-template-columns: 12px minmax(0, 1fr); }
+  .now-work-list article > button > span:last-child { grid-column: 2; }
+}
+
 .connected-draft-card {
   margin-top: 0;
 }
