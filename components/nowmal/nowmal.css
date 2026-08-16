@@ -1365,6 +1365,90 @@ a.action-button {
 .analysis-card p { margin: 6px 0 0; color: var(--ink-soft); font-size: 13px; line-height: 1.5; }
 .send-permission-card code { font-family: var(--machine); font-size: 10px; }
 
+.confirmation-backdrop {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(28, 27, 24, 0.52);
+  backdrop-filter: blur(3px);
+}
+
+.confirmation-modal {
+  width: min(100%, 570px);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 30px;
+  border: 1px solid var(--ink);
+  background: var(--bone);
+  box-shadow: 0 24px 80px rgba(28, 27, 24, 0.22);
+  animation: mgfade .18s ease both;
+}
+
+.confirmation-modal h2 {
+  margin: 18px 0 0;
+  font-size: 31px;
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -.035em;
+}
+
+.confirmation-intro {
+  margin: 16px 0 0;
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.confirmation-facts {
+  margin: 24px 0 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.confirmation-facts > div {
+  display: grid;
+  grid-template-columns: 98px 1fr;
+  gap: 18px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.confirmation-facts dt,
+.confirmation-metering {
+  color: var(--ink-mute);
+  font-family: var(--machine);
+  font-size: 8.5px;
+  line-height: 1.65;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.confirmation-facts dd {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.confirmation-metering { margin: 18px 0 0; }
+
+.confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+@media (max-width: 640px) {
+  .confirmation-backdrop { align-items: end; padding: 12px; }
+  .confirmation-modal { max-height: calc(100vh - 24px); padding: 24px 20px; }
+  .confirmation-facts > div { grid-template-columns: 1fr; gap: 5px; }
+  .confirmation-actions { display: grid; grid-template-columns: 1fr; }
+  .confirmation-actions .action-button { width: 100%; }
+}
+
 .rule-list { margin-top: 42px; border-top: 1px solid var(--hairline); }
 .rule-list article { display: grid; grid-template-columns: 1fr 246px; gap: 40px; align-items: center; padding: 20px 2px; border-bottom: 1px solid var(--hairline); }
 .rule-list strong { font-size: 18px; font-weight: 500; }

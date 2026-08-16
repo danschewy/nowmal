@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { product } from "@/lib/domain/config";
 import { useDemoStore } from "@/lib/demo/store";
@@ -11,10 +11,26 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
   const { state, patch, notify } = useDemoStore();
   const { snapshot, refresh } = useWorkspaceData();
   const [phase, setPhase] = useState<"idle" | "syncing" | "analyzing">("idle");
+  const [analysisConfirmationOpen, setAnalysisConfirmationOpen] = useState(false);
+  const confirmAnalysisRef = useRef<HTMLButtonElement>(null);
   const mailboxNeedsReview =
     mode === "connected" && snapshot?.mailboxStatus === "reauthorization_required";
   const readAuthorized =
     mode === "demo" ? state.connected : snapshot?.mailboxStatus === "connected";
+  const pendingAnalysisThreads = Math.min(
+    snapshot?.analysis.pendingThreadCount ?? 0,
+    product.workspaceAnalysisDefaultMaxThreads,
+  );
+
+  useEffect(() => {
+    if (!analysisConfirmationOpen) return;
+    confirmAnalysisRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAnalysisConfirmationOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [analysisConfirmationOpen]);
 
   const analyze = async () => {
     if (mode === "demo") return null;
@@ -53,9 +69,8 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
       if (!response.ok) throw new Error(result.error ?? "Gmail sync failed.");
       patch({ connected: true, threadCount: result.totalThreads ?? state.threadCount });
       await refresh();
-      const analysis = await analyze();
       notify(
-        `${result.hydratedThreads ?? 0} Gmail threads refreshed · ${analysis?.workItemsUpserted ?? 0} tasks and promises found`,
+        `${result.hydratedThreads ?? 0} Gmail threads refreshed · analysis waits for your approval`,
       );
     } catch (error) {
       notify(error instanceof Error ? error.message : "Gmail sync failed.");
@@ -65,6 +80,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
   };
 
   const analyzeExisting = async () => {
+    setAnalysisConfirmationOpen(false);
     try {
       const result = await analyze();
       notify(
@@ -182,7 +198,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
             <ActionButton
               tone={snapshot?.analysis.pendingThreadCount ? "solid" : "outline"}
               disabled={phase !== "idle" || !snapshot?.analysis.pendingThreadCount}
-              onClick={() => void analyzeExisting()}
+              onClick={() => setAnalysisConfirmationOpen(true)}
             >
               {phase === "analyzing"
                 ? "Finding work…"
@@ -237,6 +253,71 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
             </ActionButton>
           )}
         </div>
+
+        {analysisConfirmationOpen ? (
+          <div
+            className="confirmation-backdrop"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setAnalysisConfirmationOpen(false);
+            }}
+          >
+            <section
+              className="confirmation-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="analysis-confirmation-title"
+              aria-describedby="analysis-confirmation-description"
+            >
+              <Eyebrow>One-time model use</Eyebrow>
+              <h2 id="analysis-confirmation-title">
+                Analyze {pendingAnalysisThreads.toLocaleString()} indexed {pendingAnalysisThreads === 1 ? "thread" : "threads"}?
+              </h2>
+              <p id="analysis-confirmation-description" className="confirmation-intro">
+                Nowmal will send bounded text already stored in your private workspace to OpenAI
+                through Vercel AI Gateway to find unresolved tasks and promises.
+              </p>
+              <dl className="confirmation-facts">
+                <div>
+                  <dt>Included</dt>
+                  <dd>
+                    Up to {product.workspaceAnalysisMessagesPerThread} recent messages per thread,
+                    capped at {product.workspaceAnalysisMaxMessageChars.toLocaleString()} characters each
+                  </dd>
+                </div>
+                <div>
+                  <dt>Not included</dt>
+                  <dd>No new Gmail fetch, no mailbox edits, and no email sending</dd>
+                </div>
+                <div>
+                  <dt>Saved</dt>
+                  <dd>Only validated tasks and promises, each with an exact source quote</dd>
+                </div>
+              </dl>
+              <p className="confirmation-metering">
+                Model usage is metered by Vercel. The exact cost depends on the amount of text in
+                these threads, so no fixed estimate is shown.
+              </p>
+              <div className="confirmation-actions">
+                <ActionButton
+                  tone="outline"
+                  type="button"
+                  onClick={() => setAnalysisConfirmationOpen(false)}
+                >
+                  Cancel
+                </ActionButton>
+                <ActionButton
+                  ref={confirmAnalysisRef}
+                  tone="solid"
+                  type="button"
+                  onClick={() => void analyzeExisting()}
+                >
+                  Analyze indexed threads
+                </ActionButton>
+              </div>
+            </section>
+          </div>
+        ) : null}
       </div>
     </div>
   );

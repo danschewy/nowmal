@@ -66,7 +66,7 @@ The default manual pull hydrates at most 100 threads; the server also enforces a
 
 ## Task and promise analysis
 
-Indexing and inference are separate operations. The connected Setup flow first refreshes Gmail, then explicitly analyzes only the stored bounded index. An already-connected account can rerun analysis without making another Gmail request.
+Indexing and inference are separate operations. Gmail refresh never triggers inference. The connected Setup flow opens an explicit confirmation that states the pending-thread count, model-provider path, per-thread and per-message limits, and the operations that cannot occur. Only the confirmation action analyzes the stored bounded index. An already-connected account can run analysis without making another Gmail request.
 
 Analysis processes at most 100 pending threads in 16-thread batches with concurrency two. Each message body is truncated before model input, long threads contribute only their 12 most recent messages, and mailbox text is delimited and treated as untrusted data rather than instructions. The model can propose a work item, but persistence accepts it only when:
 

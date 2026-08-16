@@ -151,14 +151,17 @@ async function inferBatch(input: {
     subject: thread.subject,
     participants: thread.participants,
     snippet: truncate(thread.snippet, 600),
-    messages: thread.messages.slice(-12).map((message) => ({
+    messages: thread.messages.slice(-product.workspaceAnalysisMessagesPerThread).map((message) => ({
       gmailMessageId: message.gmailMessageId,
       direction: message.direction,
       sender: message.sender,
       recipients: message.recipients,
       sentAt: message.sentAt.toISOString(),
       subject: message.subject,
-      body: truncate(normalizeEmailBody(message.bodyText || message.snippet), 3_200),
+      body: truncate(
+        normalizeEmailBody(message.bodyText || message.snippet),
+        product.workspaceAnalysisMaxMessageChars,
+      ),
     })),
   }));
   const { output } = await generateText({

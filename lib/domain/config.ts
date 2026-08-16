@@ -12,5 +12,7 @@ export const product = {
   workspaceAnalysisDefaultMaxThreads: 100,
   workspaceAnalysisBatchSize: 16,
   workspaceAnalysisConcurrency: 2,
+  workspaceAnalysisMessagesPerThread: 12,
+  workspaceAnalysisMaxMessageChars: 3_200,
   workspaceAnalysisMinimumConfidence: 0.76,
 } as const;

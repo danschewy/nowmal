@@ -115,7 +115,7 @@ describe("Nowmal connected workspace", () => {
     expect(screen.queryByText("Panel scheduling and references")).toBeNull();
   });
 
-  it("analyzes the stored Gmail index without fetching Gmail again", async () => {
+  it("confirms bounded model use before analyzing the stored Gmail index", async () => {
     const user = userEvent.setup();
     window.localStorage.clear();
     window.localStorage.setItem(
@@ -177,6 +177,25 @@ describe("Nowmal connected workspace", () => {
       await screen.findByRole("button", { name: "Find tasks & promises" }),
     );
 
+    const confirmation = screen.getByRole("dialog", {
+      name: "Analyze 1 indexed thread?",
+    });
+    expect(within(confirmation).getByText(/through Vercel AI Gateway/i)).toBeTruthy();
+    expect(within(confirmation).getByText(/No new Gmail fetch/i)).toBeTruthy();
+    expect(within(confirmation).getByText(/no email sending/i)).toBeTruthy();
+    expect(fetchMock.mock.calls.filter(([url]) => String(url) === "/api/workspace/analyze")).toHaveLength(0);
+
+    await user.click(within(confirmation).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(fetchMock.mock.calls.filter(([url]) => String(url) === "/api/workspace/analyze")).toHaveLength(0);
+
+    await user.click(screen.getByRole("button", { name: "Find tasks & promises" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Analyze indexed threads",
+      }),
+    );
+
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Analysis current" })).toBeTruthy(),
     );
@@ -189,6 +208,65 @@ describe("Nowmal connected workspace", () => {
       "/api/gmail/sync",
       expect.anything(),
     );
+  });
+
+  it("keeps Gmail refresh separate from model analysis", async () => {
+    const user = userEvent.setup();
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      "nowmal.connected.v1",
+      JSON.stringify({ connected: true, threadCount: 1, view: "setup" }),
+    );
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "/api/gmail/status") {
+        return new Response(
+          JSON.stringify({ connected: true, permissionStatus: "current" }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      if (url === "/api/gmail/sync") {
+        return new Response(
+          JSON.stringify({ hydratedThreads: 1, totalThreads: 2 }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      if (url === "/api/workspace") {
+        return new Response(
+          JSON.stringify({
+            connected: true,
+            mailboxStatus: "connected",
+            threadCount: 2,
+            correctionCount: 0,
+            sendEnabled: false,
+            lastSyncedAt: "2026-08-16T12:00:00.000Z",
+            eveSessionId: null,
+            analysis: {
+              version: "tasks-promises-v1",
+              analyzedThreadCount: 0,
+              pendingThreadCount: 2,
+              workItemCount: 0,
+            },
+            workItems: [],
+            drafts: [],
+            threads: [],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<NowmalApp mode="connected" accountEmail="owner@example.com" />);
+    await user.click(await screen.findByRole("button", { name: "Refresh Gmail" }));
+
+    await screen.findByText(/analysis waits for your approval/i);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/gmail/sync",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(fetchMock.mock.calls.filter(([url]) => String(url) === "/api/workspace/analyze")).toHaveLength(0);
   });
 
   it("shows enforced connected policy instead of sample-only rule claims", async () => {

@@ -58,7 +58,7 @@ npm run db:migrate
 
 The exact account and deployment steps are in [External setup](./docs/EXTERNAL-SETUP.md). No credential is required to evaluate the public demo.
 
-The connected Setup flow separates three operations: Gmail indexing, task/promise analysis, and optional sending. Analysis reads only the bounded records already stored in Neon; it neither expands the Gmail window nor grants send access.
+The connected Setup flow separates three operations: Gmail indexing, task/promise analysis, and optional sending. Refreshing Gmail never starts model work. Before each analysis, a confirmation modal names the provider path and exact data bounds; analysis begins only after the user approves it. It reads only the bounded records already stored in Neon, never expands the Gmail window, and never grants send access.
 
 ## Product safety model
 

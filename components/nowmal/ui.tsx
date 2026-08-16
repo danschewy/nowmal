@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 export function Eyebrow({ children }: { children: ReactNode }) {
   return <div className="eyebrow">{children}</div>;
@@ -25,9 +25,12 @@ type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   tone?: "solid" | "outline" | "ghost" | "danger";
 };
 
-export function ActionButton({ tone = "outline", className = "", ...props }: ActionButtonProps) {
-  return <button className={`action-button action-${tone} ${className}`} {...props} />;
-}
+export const ActionButton = forwardRef<HTMLButtonElement, ActionButtonProps>(function ActionButton(
+  { tone = "outline", className = "", ...props },
+  ref,
+) {
+  return <button ref={ref} className={`action-button action-${tone} ${className}`} {...props} />;
+});
 
 export function StatusSquare({ status }: { status: "now" | "wait" | "later" | "done" }) {
   return <span className={`status-square status-${status}`} aria-hidden="true" />;
