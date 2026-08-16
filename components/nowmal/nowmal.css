@@ -1469,6 +1469,59 @@ a.action-button {
   align-items: center;
 }
 
+.connected-empty {
+  padding: 28px 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.connected-empty h1 {
+  font-size: 38px;
+}
+
+.connected-task-list {
+  margin-top: 30px;
+  border-top: 1px solid var(--hairline);
+}
+
+.connected-task-detail {
+  grid-template-columns: minmax(0, 680px);
+}
+
+.connected-draft-list {
+  display: grid;
+  gap: 18px;
+  margin-top: 34px;
+}
+
+.connected-draft-card {
+  margin-top: 0;
+}
+
+.connected-draft-card footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 20px;
+  border-top: 1px solid var(--hairline-soft);
+  color: var(--ink-mute);
+  font-family: var(--machine);
+  font-size: 9px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.connected-thread-list article > button small {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.thread-reader .action-button {
+  display: inline-block;
+  text-decoration: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

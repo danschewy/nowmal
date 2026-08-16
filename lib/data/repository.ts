@@ -12,6 +12,7 @@ import {
   workItemThreads,
   workspaces,
 } from "./schema";
+import type { WorkspaceSnapshot } from "@/lib/workspace/snapshot";
 
 export interface GmailThreadRecord {
   gmailThreadId: string;
@@ -134,6 +135,81 @@ export async function getMailboxStatus(workspaceId: string) {
     .from(threads)
     .where(eq(threads.workspaceId, workspaceId));
   return { connection: connection ?? null, threadCount: count };
+}
+
+export async function getWorkspaceSnapshot(workspaceId: string): Promise<WorkspaceSnapshot> {
+  const db = getDb();
+  const [connection, counts, threadRows, itemRows, draftRows] = await Promise.all([
+    db.query.mailboxConnections.findFirst({
+      where: eq(mailboxConnections.workspaceId, workspaceId),
+    }),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(threads)
+      .where(eq(threads.workspaceId, workspaceId)),
+    db
+      .select({
+        id: threads.id,
+        gmailThreadId: threads.gmailThreadId,
+        subject: threads.normalizedSubject,
+        participants: threads.participants,
+        snippet: threads.snippet,
+        latestMessageAt: threads.latestMessageAt,
+      })
+      .from(threads)
+      .where(eq(threads.workspaceId, workspaceId))
+      .orderBy(desc(threads.latestMessageAt))
+      .limit(100),
+    db
+      .select({
+        id: workItems.id,
+        kind: workItems.kind,
+        status: workItems.status,
+        title: workItems.title,
+        dueAt: workItems.dueAt,
+        confidence: workItems.confidence,
+        metadata: workItems.metadata,
+      })
+      .from(workItems)
+      .where(eq(workItems.workspaceId, workspaceId))
+      .orderBy(asc(workItems.dueAt), desc(workItems.updatedAt))
+      .limit(100),
+    db
+      .select({
+        id: nowDrafts.id,
+        state: nowDrafts.state,
+        to: nowDrafts.to,
+        subject: nowDrafts.subject,
+        body: nowDrafts.body,
+        unresolvedCheckCount: nowDrafts.unresolvedCheckCount,
+        createdAt: nowDrafts.createdAt,
+        sentAt: nowDrafts.sentAt,
+      })
+      .from(nowDrafts)
+      .where(eq(nowDrafts.workspaceId, workspaceId))
+      .orderBy(desc(nowDrafts.createdAt))
+      .limit(50),
+  ]);
+
+  return {
+    connected: Boolean(connection),
+    threadCount: counts[0]?.count ?? 0,
+    sendEnabled: connection?.sendEnabled ?? false,
+    lastSyncedAt: connection?.lastSyncedAt?.toISOString() ?? null,
+    threads: threadRows.map((thread) => ({
+      ...thread,
+      latestMessageAt: thread.latestMessageAt.toISOString(),
+    })),
+    workItems: itemRows.map((item) => ({
+      ...item,
+      dueAt: item.dueAt?.toISOString() ?? null,
+    })),
+    drafts: draftRows.map((draft) => ({
+      ...draft,
+      createdAt: draft.createdAt.toISOString(),
+      sentAt: draft.sentAt?.toISOString() ?? null,
+    })),
+  };
 }
 
 export async function setMailboxSendEnabled(workspaceId: string, enabled: boolean) {

@@ -5,6 +5,7 @@ import { TASKS } from "@/lib/demo/data";
 import { product } from "@/lib/domain/config";
 import { useDemoStore } from "@/lib/demo/store";
 import type { View } from "@/lib/domain/types";
+import { useWorkspaceData } from "./WorkspaceData";
 
 const primary: { view: View; label: string }[] = [
   { view: "brief", label: "Brief" },
@@ -29,15 +30,28 @@ export function LeftRail({
   mode: "demo" | "connected";
 }) {
   const { state, patch, reset } = useDemoStore();
-  const activeTasks = TASKS.filter(
-    (task) => !state.doneTasks.includes(task.id) && !state.notTasks.includes(task.id),
-  ).length;
+  const { snapshot } = useWorkspaceData();
+  const activeTasks = mode === "demo"
+    ? TASKS.filter(
+        (task) => !state.doneTasks.includes(task.id) && !state.notTasks.includes(task.id),
+      ).length
+    : snapshot?.workItems.filter(
+        (item) => item.kind === "task" && item.status !== "done" && item.status !== "incorrect",
+      ).length ?? 0;
+  const activePromises = mode === "demo"
+    ? 6 - state.keptPromises.filter((id) => id !== "p7").length
+    : snapshot?.workItems.filter(
+        (item) => item.kind === "promise" && item.status !== "done" && item.status !== "incorrect",
+      ).length ?? 0;
+  const activeDrafts = mode === "demo"
+    ? Math.max(0, 3 - state.nowIndex)
+    : snapshot?.drafts.filter((draft) => !["sent", "cancelled"].includes(draft.state)).length ?? 0;
   const counts: Partial<Record<View, number>> = {
-    brief: state.briefRead ? 0 : 6,
-    now: Math.max(0, 3 - state.nowIndex),
+    brief: mode === "demo" ? (state.briefRead ? 0 : 6) : activeTasks + activePromises,
+    now: activeDrafts,
     tasks: activeTasks,
-    promises: 6 - state.keptPromises.filter((id) => id !== "p7").length,
-    pipeline: state.trackersOn.length,
+    promises: activePromises,
+    pipeline: mode === "demo" ? state.trackersOn.length : 0,
     mail: mode === "demo" ? 275 : state.threadCount,
   };
 

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NowmalApp } from "@/components/nowmal/NowmalApp";
 
@@ -58,5 +58,50 @@ describe("Nowmal public demo", () => {
     await user.click(screen.getByRole("button", { name: "Enable approved sends" }));
     expect(screen.getByRole("button", { name: "Approved sends on" })).toBeTruthy();
     expect(screen.getByText(/Send an approved draft/i)).toBeTruthy();
+  });
+});
+
+describe("Nowmal connected workspace", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("renders the caller's indexed Gmail instead of public sample records", async () => {
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      "nowmal.connected.v1",
+      JSON.stringify({ connected: true, threadCount: 1, view: "mail" }),
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            connected: true,
+            threadCount: 1,
+            sendEnabled: false,
+            lastSyncedAt: "2026-08-16T12:00:00.000Z",
+            workItems: [],
+            drafts: [],
+            threads: [
+              {
+                id: "thread-real-1",
+                gmailThreadId: "gmail-real-1",
+                subject: "Actual Gmail project update",
+                participants: ["alia@example.com"],
+                snippet: "Here is the update from the real indexed mailbox.",
+                latestMessageAt: "2026-08-16T12:00:00.000Z",
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      ),
+    );
+
+    render(<NowmalApp mode="connected" accountEmail="owner@example.com" />);
+
+    await waitFor(() =>
+      expect(screen.getByText("Actual Gmail project update")).toBeTruthy(),
+    );
+    expect(screen.queryByText("Panel scheduling and references")).toBeNull();
   });
 });

@@ -13,6 +13,7 @@ The full product demo is public at `/demo` and needs no account. `/workspace` is
 - Typed Eve tools for task queries, evidence, stash, thread search, Gmail sync, draft queuing, sourced check answers, and sending.
 - Clerk route identity and Google OAuth token brokerage.
 - Conservative initial Gmail sync (at most 100 threads from 30 days) and efficient incremental sync with Gmail `historyId` cursors.
+- An authenticated, bounded workspace snapshot that renders real indexed threads, work items, drafts, counts, and search results without ever falling back to public sample records.
 - A normalized Neon/Drizzle data model and checked-in migration.
 - A `send_email` tool protected by Eve's durable `always()` approval, separate `gmail.send` consent, cleared-draft checks, a stable idempotency key, and an append-only audit record.
 - Streamable HTTP MCP channel at `/eve/v1/mcp`, protected by Vercel OIDC in production and local-dev identity locally.

@@ -16,7 +16,9 @@ flowchart LR
   MCP["Authenticated MCP client"] --> Eve
 ```
 
-The demo and connected product are not separate mockups. They share the shell, interactions, store contract, terminology, and safety model. The demo adapter supplies realistic deterministic records; the connected adapters supply Gmail/Neon records.
+The demo and connected product are not separate mockups. They share the shell, interactions, store contract, terminology, and safety model. The demo adapter supplies realistic deterministic records; the connected adapter loads only the authenticated workspace's Gmail/Neon records. It never falls back to seeded records when a connected workspace is empty or unavailable.
+
+The connected shell reads a single bounded workspace snapshot: mailbox status and counts, the 100 most recent indexed threads, up to 100 work items, and up to 50 drafts. Those independent reads run concurrently, stay scoped by Clerk's workspace ID, and refresh after Gmail sync. This avoids a request per navigation badge or screen while keeping the private and public data sources explicit.
 
 The private assistant panel uses Eve's `useEveAgent` client on the same origin. It streams durable
 turns and renders approval requests in place, so the approval shown beside a proposed send is the

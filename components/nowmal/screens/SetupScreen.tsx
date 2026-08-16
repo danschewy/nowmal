@@ -1,34 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { product } from "@/lib/domain/config";
 import { useDemoStore } from "@/lib/demo/store";
 import { ActionButton, Eyebrow, Lede, PageHeading } from "../ui";
+import { useWorkspaceData } from "../WorkspaceData";
 
 export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode: "demo" | "connected" }) {
   const { state, patch, notify } = useDemoStore();
+  const { refresh } = useWorkspaceData();
   const [syncing, setSyncing] = useState(false);
-
-  useEffect(() => {
-    if (mode !== "connected") return;
-    let active = true;
-    void fetch("/api/gmail/status", { cache: "no-store" })
-      .then(async (response) => {
-        const status = (await response.json()) as {
-          connected?: boolean;
-          threadCount?: number;
-          connection?: { sendEnabled?: boolean };
-        };
-        if (active) patch({
-          connected: Boolean(status.connected),
-          threadCount: status.threadCount ?? 0,
-          sendEnabled: Boolean(status.connection?.sendEnabled),
-        });
-      })
-      .catch(() => active && patch({ connected: false }));
-    return () => { active = false; };
-  }, [mode, patch]);
 
   const connect = async () => {
     if (mode === "demo") {
@@ -46,6 +28,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
       const result = (await response.json()) as { hydratedThreads?: number; totalThreads?: number; error?: string };
       if (!response.ok) throw new Error(result.error ?? "Gmail sync failed.");
       patch({ connected: true, threadCount: result.totalThreads ?? state.threadCount });
+      await refresh();
       notify(`Gmail connected · ${result.hydratedThreads ?? 0} recent threads indexed`);
     } catch (error) {
       notify(error instanceof Error ? error.message : "Gmail sync failed.");
