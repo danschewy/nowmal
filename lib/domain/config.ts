@@ -8,4 +8,9 @@ export const product = {
   gmailInitialWindowDays: 30,
   gmailSyncDefaultMaxThreads: 100,
   gmailSyncHardMaxThreads: 500,
+  workspaceAnalysisModel: "openai/gpt-5.6-terra",
+  workspaceAnalysisDefaultMaxThreads: 100,
+  workspaceAnalysisBatchSize: 16,
+  workspaceAnalysisConcurrency: 2,
+  workspaceAnalysisMinimumConfidence: 0.76,
 } as const;

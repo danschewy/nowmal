@@ -9,8 +9,28 @@ import { useWorkspaceData } from "../WorkspaceData";
 
 export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode: "demo" | "connected" }) {
   const { state, patch, notify } = useDemoStore();
-  const { refresh } = useWorkspaceData();
-  const [syncing, setSyncing] = useState(false);
+  const { snapshot, refresh } = useWorkspaceData();
+  const [phase, setPhase] = useState<"idle" | "syncing" | "analyzing">("idle");
+
+  const analyze = async () => {
+    if (mode === "demo") return null;
+    setPhase("analyzing");
+    const response = await fetch("/api/workspace/analyze", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ maxThreads: product.workspaceAnalysisDefaultMaxThreads }),
+    });
+    const result = (await response.json()) as {
+      analyzedThreads?: number;
+      workItemsUpserted?: number;
+      failedThreads?: number;
+      alreadyCurrent?: boolean;
+      error?: string;
+    };
+    if (!response.ok) throw new Error(result.error ?? "Workspace analysis failed.");
+    await refresh();
+    return result;
+  };
 
   const connect = async () => {
     if (mode === "demo") {
@@ -18,7 +38,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
       notify(state.connected ? "Sample Gmail disconnected" : "Sample Gmail connected");
       return;
     }
-    setSyncing(true);
+    setPhase("syncing");
     try {
       const response = await fetch("/api/gmail/sync", {
         method: "POST",
@@ -29,17 +49,36 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
       if (!response.ok) throw new Error(result.error ?? "Gmail sync failed.");
       patch({ connected: true, threadCount: result.totalThreads ?? state.threadCount });
       await refresh();
-      notify(`Gmail connected · ${result.hydratedThreads ?? 0} recent threads indexed`);
+      const analysis = await analyze();
+      notify(
+        `${result.hydratedThreads ?? 0} Gmail threads refreshed · ${analysis?.workItemsUpserted ?? 0} tasks and promises found`,
+      );
     } catch (error) {
       notify(error instanceof Error ? error.message : "Gmail sync failed.");
     } finally {
-      setSyncing(false);
+      setPhase("idle");
+    }
+  };
+
+  const analyzeExisting = async () => {
+    try {
+      const result = await analyze();
+      notify(
+        result?.alreadyCurrent
+          ? "Your workspace analysis is already current"
+          : `${result?.analyzedThreads ?? 0} threads analyzed · ${result?.workItemsUpserted ?? 0} tasks and promises found`,
+      );
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Workspace analysis failed.");
+    } finally {
+      setPhase("idle");
     }
   };
 
   const permissions = [
     ["Read recent mail", "Indexes up to 100 threads from the last 30 days. Older mail stays untouched.", "Included", state.connected],
     ["Check for updates", "After the first pass, refreshes fetch only conversations that changed.", "Included", state.connected],
+    ["Find tasks and promises", "Analyzes only the bounded index and saves an exact source quote with every result.", "Included", Boolean(snapshot?.analysis.analyzedThreadCount)],
     ["Keep one record per task", "Stores the useful context and source threads so the same request is not created twice.", "Included", state.connected],
     ["Send an approved draft", "Optional access. Every send still pauses for your confirmation and is recorded.", "Optional", state.sendEnabled],
   ] as const;
@@ -63,17 +102,47 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
           <ActionButton
             tone={state.connected ? "outline" : "solid"}
             onClick={connect}
-            disabled={syncing || (mode === "connected" && state.connected)}
+            disabled={phase !== "idle"}
           >
-            {syncing ? "Reading Gmail…" : state.connected ? "Connected" : "Connect Gmail"}
+            {phase === "syncing"
+              ? "Reading Gmail…"
+              : phase === "analyzing"
+                ? "Finding work…"
+                : state.connected
+                  ? "Refresh Gmail"
+                  : "Connect Gmail"}
           </ActionButton>
           <div className="scan-track"><span style={{ width: state.connected ? "100%" : "0%" }} /></div>
           <p>{state.connected
             ? mode === "demo"
               ? "Sample ready · 41 relevant threads · 9 tasks · 7 duplicate asks merged"
-              : `${state.threadCount.toLocaleString()} recent threads indexed · future refreshes fetch changes only`
+              : `${state.threadCount.toLocaleString()} recent threads indexed · ${snapshot?.analysis.analyzedThreadCount.toLocaleString() ?? 0} analyzed · future refreshes fetch changes only`
             : "Connect when you are ready. Nothing is fetched beforehand."}</p>
         </section>
+
+        {mode === "connected" && state.connected ? (
+          <section className="analysis-card">
+            <div>
+              <strong>Turn the index into a workspace.</strong>
+              <p>
+                {snapshot?.analysis.pendingThreadCount
+                  ? `${snapshot.analysis.pendingThreadCount.toLocaleString()} indexed threads still need analysis. No additional Gmail data will be fetched.`
+                  : `${snapshot?.analysis.workItemCount.toLocaleString() ?? 0} source-backed tasks and promises are current.`}
+              </p>
+            </div>
+            <ActionButton
+              tone={snapshot?.analysis.pendingThreadCount ? "solid" : "outline"}
+              disabled={phase !== "idle" || !snapshot?.analysis.pendingThreadCount}
+              onClick={() => void analyzeExisting()}
+            >
+              {phase === "analyzing"
+                ? "Finding work…"
+                : snapshot?.analysis.pendingThreadCount
+                  ? "Find tasks & promises"
+                  : "Analysis current"}
+            </ActionButton>
+          </section>
+        ) : null}
 
         <div className="permission-list">
           {permissions.map(([label, note, tag, granted]) => (

@@ -1,4 +1,5 @@
 import { product } from "@/lib/domain/config";
+import { normalizeEmailBody } from "./text";
 
 const GMAIL_ROOT = "https://gmail.googleapis.com/gmail/v1/users/me";
 
@@ -152,6 +153,7 @@ export function plainTextOf(message: GmailMessage) {
   const visit = (part?: GmailPart): string => {
     if (!part) return "";
     if (part.mimeType === "text/plain" && part.body?.data) return decodeBase64Url(part.body.data);
+    if (part.mimeType === "text/html" && part.body?.data) return normalizeEmailBody(decodeBase64Url(part.body.data));
     for (const child of part.parts ?? []) {
       const text = visit(child);
       if (text) return text;

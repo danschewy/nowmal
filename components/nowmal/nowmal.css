@@ -1355,9 +1355,12 @@ a.action-button {
 .permission-list strong { font-size: 15.5px; font-weight: 500; }
 .permission-list p { margin: 5px 0 0; color: var(--ink-soft); font-size: 13.5px; line-height: 1.5; }
 .permission-list small { padding-top: 4px; color: var(--ink-mute); font-family: var(--machine); font-size: 8.5px; letter-spacing: .12em; text-transform: uppercase; }
-.send-permission-card { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-top: 26px; padding: 18px; border: 1px dashed var(--ink-ghost); background: var(--paper); }
-.send-permission-card strong { font-size: 15px; }
-.send-permission-card p { margin: 6px 0 0; color: var(--ink-soft); font-size: 13px; line-height: 1.5; }
+.send-permission-card,
+.analysis-card { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-top: 26px; padding: 18px; border: 1px dashed var(--ink-ghost); background: var(--paper); }
+.send-permission-card strong,
+.analysis-card strong { font-size: 15px; }
+.send-permission-card p,
+.analysis-card p { margin: 6px 0 0; color: var(--ink-soft); font-size: 13px; line-height: 1.5; }
 .send-permission-card code { font-family: var(--machine); font-size: 10px; }
 
 .rule-list { margin-top: 42px; border-top: 1px solid var(--hairline); }
@@ -1484,7 +1487,25 @@ a.action-button {
 }
 
 .connected-task-detail {
-  grid-template-columns: minmax(0, 680px);
+  grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.8fr);
+}
+
+.connected-evidence + .connected-evidence {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+.connected-evidence a {
+  display: inline-block;
+  margin-top: 10px;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--ink-mute);
+  font-family: var(--machine);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  text-transform: uppercase;
 }
 
 .connected-draft-list {

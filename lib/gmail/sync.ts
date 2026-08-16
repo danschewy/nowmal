@@ -105,7 +105,9 @@ function normalizeMessage(accountEmail: string, message: GmailMessage) {
   const recipients = [headers.to, headers.cc].filter(Boolean).flatMap((value) => value.split(",").map((item) => item.trim()));
   return {
     gmailMessageId: message.id,
-    direction: sender.toLowerCase().includes(accountEmail.toLowerCase()) ? ("outbound" as const) : ("inbound" as const),
+    direction: message.labelIds?.includes("SENT") || sender.toLowerCase().includes(accountEmail.toLowerCase())
+      ? ("outbound" as const)
+      : ("inbound" as const),
     sender,
     recipients,
     subject: headers.subject ?? "(no subject)",

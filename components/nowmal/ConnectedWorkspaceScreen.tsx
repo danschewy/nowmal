@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useDemoStore } from "@/lib/demo/store";
 import type { View } from "@/lib/domain/types";
 import type {
@@ -8,7 +9,7 @@ import type {
   WorkspaceWorkItemSummary,
 } from "@/lib/workspace/snapshot";
 import { useWorkspaceData } from "./WorkspaceData";
-import { Eyebrow, Lede, PageHeading, SectionLabel, StatusSquare } from "./ui";
+import { ActionButton, Eyebrow, Lede, PageHeading, SectionLabel, StatusSquare } from "./ui";
 
 export function ConnectedWorkspaceScreen({
   accountEmail,
@@ -129,10 +130,39 @@ function ConnectedBriefScreen() {
 }
 
 function ConnectedItemsScreen({ kind }: { kind: "task" | "promise" }) {
-  const { snapshot } = useWorkspaceData();
-  const { state, patch } = useDemoStore();
+  const { snapshot, refresh } = useWorkspaceData();
+  const { state, patch, notify } = useDemoStore();
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const items = (snapshot?.workItems ?? []).filter((item) => item.kind === kind);
   const isTask = kind === "task";
+
+  const updateItem = async (
+    item: WorkspaceWorkItemSummary,
+    action: "done" | "incorrect" | "restore",
+  ) => {
+    setUpdatingId(item.id);
+    try {
+      const response = await fetch(`/api/workspace/items/${encodeURIComponent(item.id)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(result.error ?? "Item could not be updated.");
+      await refresh();
+      notify(
+        action === "done"
+          ? `Marked done: ${item.title}`
+          : action === "incorrect"
+            ? `Removed as an incorrect inference: ${item.title}`
+            : `Restored: ${item.title}`,
+      );
+    } catch (cause) {
+      notify(cause instanceof Error ? cause.message : "Item could not be updated.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   return (
     <div className="screen">
@@ -145,7 +175,9 @@ function ConnectedItemsScreen({ kind }: { kind: "task" | "promise" }) {
       {!items.length ? (
         <ConnectedEmpty
           title={isTask ? "No tasks found yet" : "No promises found yet"}
-          body="Your Gmail index is connected and the public sample is hidden. Ask Eve about a specific thread or refresh when new mail arrives."
+          body={snapshot?.analysis.pendingThreadCount
+            ? `Your real Gmail is indexed, but ${snapshot.analysis.pendingThreadCount} threads still need analysis. Open Setup to find source-backed tasks and promises.`
+            : "Nowmal analyzed the bounded Gmail index and did not find a sufficiently clear open item. The public sample stays hidden."}
         />
       ) : (
         <div className="task-list connected-task-list">
@@ -169,13 +201,61 @@ function ConnectedItemsScreen({ kind }: { kind: "task" | "promise" }) {
                 {open ? (
                   <div className="task-detail connected-task-detail">
                     <div>
+                      <SectionLabel>Evidence from Gmail</SectionLabel>
+                      {item.evidence.map((evidence) => (
+                        <div className="connected-evidence" key={`${evidence.gmailMessageId}-${evidence.quote}`}>
+                          <blockquote>“{evidence.quote}”</blockquote>
+                          <div className="evidence-source">
+                            {evidence.sender} · {evidence.subject} · {formatDate(evidence.sentAt)}
+                          </div>
+                          <a
+                            href={`https://mail.google.com/mail/u/0/#all/${encodeURIComponent(evidence.gmailThreadId)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Open source thread
+                          </a>
+                        </div>
+                      ))}
+                      {!item.evidence.length ? <p>No evidence quote was stored for this item.</p> : null}
+                    </div>
+                    <div>
                       <SectionLabel>Stored context</SectionLabel>
                       <dl>
-                        {Object.entries(item.metadata).map(([key, value]) => (
-                          <div key={key}><dt>{humanize(key)}</dt><dd>{String(value)}</dd></div>
+                        {Object.entries(item.metadata).filter(([key]) => key !== "analysis").map(([key, value]) => (
+                          <div key={key}><dt>{humanize(key)}</dt><dd>{formatMetadata(value)}</dd></div>
                         ))}
                       </dl>
-                      {!Object.keys(item.metadata).length ? <p>No additional context was stored for this item.</p> : null}
+                      {!Object.keys(item.metadata).filter((key) => key !== "analysis").length ? <p>No additional context was stored for this item.</p> : null}
+                      <div className="task-actions">
+                        {item.status === "done" || item.status === "incorrect" ? (
+                          <ActionButton
+                            disabled={updatingId === item.id}
+                            onClick={() => void updateItem(item, "restore")}
+                          >
+                            Restore
+                          </ActionButton>
+                        ) : (
+                          <>
+                            <ActionButton
+                              tone="solid"
+                              disabled={updatingId === item.id}
+                              onClick={() => void updateItem(item, "done")}
+                            >
+                              Mark done
+                            </ActionButton>
+                            <ActionButton
+                              disabled={updatingId === item.id}
+                              onClick={() => void updateItem(item, "incorrect")}
+                            >
+                              {isTask ? "Not a task" : "Not a promise"}
+                            </ActionButton>
+                          </>
+                        )}
+                      </div>
+                      <p className="correction-note">
+                        Your correction is stored separately and will not be overwritten by reanalysis.
+                      </p>
                     </div>
                   </div>
                 ) : null}
@@ -263,7 +343,7 @@ function ConnectedMailScreen({ accountEmail }: { accountEmail: string }) {
                 <button type="button" onClick={() => patch({ openThreadId: open ? null : thread.id })} aria-expanded={open}>
                   <span><strong>{threadParticipant(thread, accountEmail)}</strong><small>{formatDate(thread.latestMessageAt)}</small></span>
                   <span><strong>{thread.subject}</strong><small><i />{thread.snippet || "No preview available"}</small></span>
-                  <span className="thread-filed">Indexed</span>
+                  <span className="thread-filed">{thread.analyzed ? "Analyzed" : "Indexed"}</span>
                 </button>
                 {open ? (
                   <div className="thread-reader">
@@ -343,4 +423,11 @@ function metadataText(metadata: Record<string, unknown>) {
 
 function humanize(value: string) {
   return value.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]/g, " ").replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function formatMetadata(value: unknown) {
+  if (value === null || value === undefined) return "—";
+  if (Array.isArray(value)) return value.map(String).join(", ");
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
 }

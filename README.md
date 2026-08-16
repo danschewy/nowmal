@@ -14,6 +14,7 @@ The full product demo is public at `/demo` and needs no account. `/workspace` is
 - Clerk route identity and Google OAuth token brokerage.
 - Conservative initial Gmail sync (at most 100 threads from 30 days) and efficient incremental sync with Gmail `historyId` cursors.
 - An authenticated, bounded workspace snapshot that renders real indexed threads, work items, drafts, counts, and search results without ever falling back to public sample records.
+- Bounded AI analysis of the stored index in 16-thread batches, with prompt-injection isolation, exact-quote validation, deterministic dedupe keys, incremental re-analysis, and append-only user corrections.
 - A normalized Neon/Drizzle data model and checked-in migration.
 - A `send_email` tool protected by Eve's durable `always()` approval, separate `gmail.send` consent, cleared-draft checks, a stable idempotency key, and an append-only audit record.
 - Streamable HTTP MCP channel at `/eve/v1/mcp`, protected by Vercel OIDC in production and local-dev identity locally.
@@ -49,6 +50,8 @@ npm run db:migrate
 ```
 
 The exact account and deployment steps are in [External setup](./docs/EXTERNAL-SETUP.md). No credential is required to evaluate the public demo.
+
+The connected Setup flow separates three operations: Gmail indexing, task/promise analysis, and optional sending. Analysis reads only the bounded records already stored in Neon; it neither expands the Gmail window nor grants send access.
 
 ## Product safety model
 

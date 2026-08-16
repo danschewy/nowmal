@@ -8,6 +8,7 @@ export interface WorkspaceThreadSummary {
   participants: string[];
   snippet: string;
   latestMessageAt: string;
+  analyzed: boolean;
 }
 
 export interface WorkspaceWorkItemSummary {
@@ -18,6 +19,14 @@ export interface WorkspaceWorkItemSummary {
   dueAt: string | null;
   confidence: number | null;
   metadata: Record<string, unknown>;
+  evidence: {
+    quote: string;
+    gmailMessageId: string;
+    gmailThreadId: string;
+    subject: string;
+    sender: string;
+    sentAt: string;
+  }[];
 }
 
 export interface WorkspaceDraftSummary {
@@ -36,7 +45,9 @@ export interface WorkspaceSnapshot {
   threadCount: number;
   sendEnabled: boolean;
   lastSyncedAt: string | null;
+  analysis: AnalysisProgress;
   workItems: WorkspaceWorkItemSummary[];
   threads: WorkspaceThreadSummary[];
   drafts: WorkspaceDraftSummary[];
 }
+import type { AnalysisProgress } from "./analysis-contract";

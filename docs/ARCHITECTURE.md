@@ -62,6 +62,20 @@ Later pulls use the mailbox's Gmail `historyId` and request only `messageAdded` 
 
 The default manual pull hydrates at most 100 threads; the server also enforces an absolute 500-thread ceiling for explicit maintenance calls. This controls Gmail quota, data ingestion, and server duration. The next deployment step for large inboxes is to place user-approved continuation batches on Vercel Workflow and connect Gmail watch notifications through Google Pub/Sub.
 
+## Task and promise analysis
+
+Indexing and inference are separate operations. The connected Setup flow first refreshes Gmail, then explicitly analyzes only the stored bounded index. An already-connected account can rerun analysis without making another Gmail request.
+
+Analysis processes at most 100 pending threads in 16-thread batches with concurrency two. Each message body is truncated before model input, long threads contribute only their 12 most recent messages, and mailbox text is delimited and treated as untrusted data rather than instructions. The model can propose a work item, but persistence accepts it only when:
+
+- confidence is at least 0.76;
+- a task cites an inbound message or a promise cites an outbound message;
+- every saved quote can be found in the cited stored message after whitespace normalization;
+- the Gmail thread and message IDs belong to the authenticated workspace; and
+- the due date, status, and bounded field shapes validate.
+
+The deterministic key combines analysis version, item kind, normalized counterparty, stable intent, and an occurrence key only for genuinely recurring work. Candidates with the same key merge before persistence, while `work_item_threads` and `evidence_spans` retain every validated source. A successful batch stamps its source threads with the analysis version; a later Gmail upsert removes that stamp, so only changed threads become pending again. Model or persistence failures leave the stamp absent and are safe to retry.
+
 ## Task and grouping efficiency
 
 - Dedupe is a unique domain key, not a UI heuristic.

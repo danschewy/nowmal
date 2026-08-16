@@ -16,10 +16,13 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json().catch(() => ({}))) as { maxThreads?: number };
+  const requestedMaxThreads = Number(body.maxThreads);
   const maxThreads = Math.max(
     1,
     Math.min(
-      Number(body.maxThreads ?? product.gmailSyncDefaultMaxThreads),
+      Number.isFinite(requestedMaxThreads)
+        ? requestedMaxThreads
+        : product.gmailSyncDefaultMaxThreads,
       product.gmailSyncHardMaxThreads,
     ),
   );

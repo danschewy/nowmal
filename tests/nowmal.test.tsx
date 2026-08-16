@@ -79,6 +79,12 @@ describe("Nowmal connected workspace", () => {
             threadCount: 1,
             sendEnabled: false,
             lastSyncedAt: "2026-08-16T12:00:00.000Z",
+            analysis: {
+              version: "tasks-promises-v1",
+              analyzedThreadCount: 1,
+              pendingThreadCount: 0,
+              workItemCount: 0,
+            },
             workItems: [],
             drafts: [],
             threads: [
@@ -89,6 +95,7 @@ describe("Nowmal connected workspace", () => {
                 participants: ["alia@example.com"],
                 snippet: "Here is the update from the real indexed mailbox.",
                 latestMessageAt: "2026-08-16T12:00:00.000Z",
+                analyzed: true,
               },
             ],
           }),
@@ -103,5 +110,71 @@ describe("Nowmal connected workspace", () => {
       expect(screen.getByText("Actual Gmail project update")).toBeTruthy(),
     );
     expect(screen.queryByText("Panel scheduling and references")).toBeNull();
+  });
+
+  it("analyzes the stored Gmail index without fetching Gmail again", async () => {
+    const user = userEvent.setup();
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      "nowmal.connected.v1",
+      JSON.stringify({ connected: true, threadCount: 1, view: "setup" }),
+    );
+    let workspaceReads = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "/api/workspace/analyze") {
+        return new Response(
+          JSON.stringify({
+            analyzedThreads: 1,
+            workItemsUpserted: 1,
+            rejectedCandidates: 0,
+            failedThreads: 0,
+            alreadyCurrent: false,
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      if (url === "/api/workspace") {
+        workspaceReads += 1;
+        const analyzed = workspaceReads > 1;
+        return new Response(
+          JSON.stringify({
+            connected: true,
+            threadCount: 1,
+            sendEnabled: false,
+            lastSyncedAt: "2026-08-16T12:00:00.000Z",
+            analysis: {
+              version: "tasks-promises-v1",
+              analyzedThreadCount: analyzed ? 1 : 0,
+              pendingThreadCount: analyzed ? 0 : 1,
+              workItemCount: analyzed ? 1 : 0,
+            },
+            workItems: [],
+            drafts: [],
+            threads: [],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<NowmalApp mode="connected" accountEmail="owner@example.com" />);
+    await user.click(
+      await screen.findByRole("button", { name: "Find tasks & promises" }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Analysis current" })).toBeTruthy(),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/workspace/analyze",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      "/api/gmail/sync",
+      expect.anything(),
+    );
   });
 });
