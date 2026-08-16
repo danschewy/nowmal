@@ -12,17 +12,13 @@ Try the complete account-free product at [`/demo`](https://nowmal.vercel.app/dem
 - **Trackers** summarize repeated, multi-thread processes only when the evidence supports a real grouping.
 - **Eve** is a conversational interface over narrow typed tools. It reads, explains, drafts, and requests approval; it does not get a general shell or an unchecked send path.
 
-## Architecture at a glance
+## Five decisions that shape the app
 
-1. **One product, two explicit data adapters.** `/demo` and `/workspace` share the same shell and interaction model. The demo is deterministic and local; the connected adapter is Clerk-authenticated and never substitutes sample data for an empty or failed private workspace.
-2. **Index first, analyze second.** Gmail sync stores at most 300 recent threads, then follows `historyId` incrementally. Analysis is a separate, user-confirmed, bounded model operation, so refreshing mail cannot silently create cost or mutate inferred work. Pending filtering happens in Neon before each 100-thread analysis limit, so repeated passes progress through the entire bounded index.
-3. **Evidence before automation.** Threads and messages are normalized once in Neon. Work items cite exact message spans, use deterministic dedupe keys, and retain append-only corrections. Confirmed analysis may close an item only with a newer exact quote that explicitly fulfills or cancels it; an approved Nowmal send closes only its directly linked task.
-4. **One canonical work queue.** A pure selector derives Now from drafts, tasks, promises, status, and due dates. Navigation counts and the focused screen therefore cannot drift into competing definitions of “needs attention.”
-5. **Narrow agent boundary.** Eve 0.38 is mounted into Next.js 16 through `withEve()`. Its tool set is typed and workspace-scoped; browser conversations are durable, Clerk-owned, and generation-versioned so an obsolete manifest or MCP session cannot replace the current web chat.
-6. **Human-gated sending.** Read and send consent are separate. A send requires a cleared stored draft, zero unresolved checks, matching idempotency key, current `gmail.send` scope, a durable Eve approval, and an audit reservation written before Gmail is called.
-7. **One identity plane, one data plane.** Clerk owns user identity and Google token brokerage. Neon, provisioned through Vercel Marketplace and accessed with Drizzle, owns queryable product state. Every private query is scoped by the Clerk user ID.
-8. **Bounded search with a truthful fallback.** Search checks the indexed full message text first. An exact miss may hydrate at most ten matching Gmail conversations; it never turns an arbitrary search into an unbounded mailbox import.
-9. **The same agent is available over MCP.** `/eve/v1/mcp` exposes the typed Nowmal agent behind OAuth/Vercel identity while preserving the same workspace and send constraints as the browser.
+1. **The demo is the real product with safe sample data.** `/demo` and `/workspace` use the same screens and interactions. The only difference is the data source: the demo stays on the device, while the connected app uses the signed-in person's private workspace. An empty or broken connected account never falls back to sample mail.
+2. **Nowmal works from a small Gmail index, not the whole mailbox.** The first refresh stores up to 300 recent threads in Neon; later refreshes fetch only changes. Search uses that index first and may fetch up to ten exact Gmail matches when needed. Mail refresh and AI analysis are separate, so importing mail cannot silently spend model tokens or rewrite tasks.
+3. **Every task must be explainable.** Gmail threads and messages are stored once. Tasks, promises, and trackers point back to exact source messages, while stable keys prevent the same request from becoming several tasks. A model suggestion is accepted only after the server validates its source, shape, and confidence.
+4. **There is one definition of what needs attention.** The Now screen and its navigation count come from the same queue function. Drafts, tasks, promises, status, and due dates cannot drift into competing dashboards. Trackers are conservative groupings over those same source-backed items.
+5. **Eve can help, but authority stays narrow.** Clerk owns identity and Google consent; Vercel-managed Neon owns durable product data. Eve reaches them only through typed, workspace-scoped tools in web chat or MCP. Sending is a separate permission and always requires a checked draft, a fresh human approval, and duplicate-send protection.
 
 ## What is working
 
@@ -77,7 +73,7 @@ The audit reservation is written before Gmail is called. If the process cannot p
 
 ## Architecture
 
-See [Architecture](./docs/ARCHITECTURE.md) for the domain model, query strategy, Eve boundaries, and send design.
+See [Architecture](./docs/ARCHITECTURE.md) for the five core decisions, data ownership, request flows, safety guarantees, current limits, and code map.
 
 ## Primary documentation used
 

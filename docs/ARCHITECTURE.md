@@ -1,146 +1,135 @@
 # Nowmal architecture
 
-## Shape
+This is the handoff version of the architecture. Try the [public demo](https://nowmal.vercel.app/demo) first; the decisions below explain why the connected product behaves the way it does.
+
+Nowmal is a focused work layer over Gmail. It keeps a bounded copy of recent mail, turns source-backed requests and commitments into work, and gives Eve narrow tools to explain or act on that work. It is deliberately not a second email client and not an autonomous mailbox agent.
+
+## System shape
 
 ```mermaid
 flowchart LR
-  Demo["Public /demo\nseeded adapter"] --> UI["Shared Next.js product shell"]
-  User["Private /workspace\nClerk session"] --> UI
-  UI --> API["Next.js Gmail APIs"]
-  UI --> Eve["Eve durable sessions"]
-  API --> Gmail["Gmail REST API"]
-  API --> Neon["Neon Postgres"]
-  Eve --> Tools["Narrow typed tools"]
+  Demo["Public demo\nlocal sample data"] --> Shell["Shared Next.js product shell"]
+  User["Signed-in workspace"] --> Shell
+  Gmail["Gmail"] --> Sync["Bounded sync"]
+  Sync --> Neon["Vercel-managed Neon"]
+  Neon --> Shell
+  Shell --> Eve["Eve web chat"]
+  MCP["Authenticated MCP client"] --> Eve
+  Eve --> Tools["Typed Nowmal tools"]
   Tools --> Neon
   Tools --> Gmail
-  MCP["Authenticated MCP client"] --> Eve
+  Clerk["Clerk identity + Google consent"] --> User
+  Clerk --> Eve
 ```
 
-The demo and connected product are not separate mockups. They share the shell, interactions, store contract, terminology, and safety model. The demo adapter supplies realistic deterministic records; the connected adapter loads only the authenticated workspace's Gmail/Neon records. It never falls back to seeded records when a connected workspace is empty or unavailable.
+## Five decisions
 
-The connected shell reads a single bounded workspace snapshot: mailbox status and counts, the 100 most recent indexed threads, up to 100 work items, and up to 50 drafts. Those independent reads run concurrently, stay scoped by Clerk's workspace ID, and refresh after Gmail sync. This avoids a request per navigation badge or screen while keeping the private and public data sources explicit.
+### 1. The demo and connected app are one product
 
-The connected `Now` view is derived from that snapshot through one pure selector shared with the navigation count. It orders human-gated draft-review work first, includes every task or promise explicitly marked `needs_you`, and resurfaces `waiting` or `later` items once their due date is within seven days. Completed, incorrect, sent, and cancelled records never enter the queue. Selecting a work item opens its evidence and correction controls in the canonical task or promise view rather than creating a second mutation path.
+`/demo` and `/workspace` share the same product shell, language, and safety interactions. The public demo uses deterministic sample records and stores only reversible preferences on the device. The connected app loads only the signed-in person's server-side workspace.
 
-The private assistant panel uses Eve's `useEveAgent` client on the same origin. It streams durable
-turns and renders approval requests in place, so the approval shown beside a proposed send is the
-actual Eve input request—not a second client-only confirmation.
+This matters because the demo exercises the product rather than imitating it. It also creates a hard privacy rule: an empty or failed private workspace must look empty or failed. It must never be filled with sample mail.
 
-Eve route authentication and Eve session ownership are separate boundaries. Clerk verifies every browser request. A `session.started` hook records the authenticated owner and session ID in Neon; every later ID-addressed message, stream, cancel, compact, clear, or reset request must match that owner. A fresh session can open its stream just before that hook's Neon write completes, so the guard performs a short bounded wait only while no owner exists; a known different owner is rejected immediately. Browser sessions are stored under an explicit agent-generation surface. The workspace snapshot resumes only the caller's current-generation browser session, never an MCP session or a session created against an incompatible tool manifest. Bumping that generation starts one clean conversation without deleting mailbox state or weakening ownership checks. Unknown and cross-account session IDs fail closed.
+### 2. Index mail first; analyze it only with permission
 
-## Decisions
+Gmail remains the source of truth. Nowmal stores a useful, bounded index in Neon so screens, search, and Eve do not need to rescan Gmail for every question.
 
-### Clerk over Neon Auth
+The first refresh imports at most 300 threads from the last 30 days. Later refreshes use Gmail's history cursor to fetch only changed conversations. Search checks the full stored message text first; after an exact miss, it may import up to ten matching Gmail conversations. It never turns a search into an open-ended mailbox import.
 
-Clerk is the smallest coherent choice here because the current Clerk SDK documents both Next.js resource protection and Eve tool authorization, and its backend can retrieve and refresh a user's Google provider token. That collapses identity and Gmail consent into one boundary. Neon remains data infrastructure rather than a second identity plane.
+Sync and analysis are different actions. Refreshing Gmail updates the index but does not call a model or change inferred work. The user confirms analysis separately, and each pass handles at most 100 pending threads. Filtering happens before that limit, so repeated confirmed passes move through the remaining index instead of reprocessing the same newest mail.
 
-The web app, Eve chat, and MCP all resolve to the same Clerk user ID before touching a workspace. Eve chat authenticates a full request as a Clerk session instead of manually selecting a cookie. The MCP endpoint is a Clerk OAuth protected resource, so compatible clients can complete consent and receive a short-lived user token; Vercel OIDC remains an internal workload fallback. Every durable MCP invocation is therefore scoped to the same Neon workspace as the signed-in app.
+### 3. Inferred work must keep its evidence
 
-Gmail ingestion stays deliberately bounded: the first sync reads at most 300 recent threads and later refreshes use `historyId`. Workspaces created under the earlier 100-thread limit expand toward 300 on their next explicit refresh; the expansion hydrates only thread IDs not already indexed. Connected Search queries the private index first. Only when that index has no match does an explicit user search ask Gmail for up to 10 exact matching conversations and add just those conversations to the index. This keeps long-tail mail discoverable without turning search into an unbounded mailbox import.
+Threads and messages are normalized once in Neon. Tasks are requests found in incoming mail; promises are commitments found in the user's sent mail. Both use one work-item model because their lifecycle is the same even though their direction is different.
 
-### Neon + Drizzle
+Every accepted item stores an exact quote from a message in the same workspace. Stable dedupe keys merge repeated mentions of the same intent, while join tables preserve every contributing thread. User corrections are stored separately so a later model pass cannot silently undo a human decision.
 
-The product needs cross-session, cross-agent, independently queryable state. Eve `defineState` is intentionally session-scoped, so durable inbox state belongs in Postgres. Drizzle keeps the schema executable and the checked-in SQL migration inspectable.
+The model proposes; the server decides what is valid. It checks confidence, message direction, workspace ownership, field bounds, and whether the quote actually exists in the cited message. Closing work is stricter: it needs newer evidence that explicitly fulfills or cancels the item. A reply or model omission is not enough.
 
-### One work-item table
+### 4. “Now” has one definition
 
-Tasks and promises are symmetric reads of opposite mail directions. They share `work_items`; `kind` distinguishes them. This gives the hot workspace queries one index shape instead of two parallel systems:
+The connected app loads one bounded workspace snapshot rather than making a separate request for every screen and navigation badge. Independent database reads are batched, and the client derives views from that snapshot.
 
-- `(workspace_id, status, due_at)` for Now/Tasks;
-- `(workspace_id, kind, status)` for Tasks versus Promises;
-- unique `(workspace_id, dedupe_key)` for exactly one work item per inferred intent.
+One pure queue function powers both the Now screen and the Now count. It combines unsent drafts with open tasks and promises, then orders them by urgency and due date. Opening an item takes the user to its canonical task or promise detail instead of creating a second place to edit it.
 
-### Threads are stored once, relationships are joins
+Trackers are also views over source-backed work. They appear only when at least two items form a repeated process across multiple threads or counterparties. A single conversation does not become a tracker just because a classifier found a keyword.
 
-Gmail threads and messages are normalized. Tasks can cite several threads through `work_item_threads`, and clusters can contain a thread through `thread_clusters`. This avoids copying mail bodies into every feature and makes lineage cheap to explain.
+### 5. Eve and sending stay inside narrow permissions
 
-### Evidence is first-class
+Clerk supplies the user identity and brokers Google consent. Neon, provisioned through the Vercel project and accessed through Drizzle, stores queryable product state. Every private database operation includes the Clerk user ID as its workspace boundary.
 
-`evidence_spans` links a short quote to the exact normalized Gmail message. A work item can be rebuilt without losing the source that justified it. `answer_check` refuses a source message outside the caller's workspace.
+Eve has typed Nowmal tools for tasks, evidence, search, sync, analysis, drafting, and sending. It does not receive a general shell, arbitrary web access, or an unchecked Gmail client. The browser and MCP expose the same agent and the same workspace rules. Browser conversations are durable, but a stored owner check prevents another account—or an unrelated MCP session—from taking over a web conversation.
 
-### Public demo without auth
+Read access and send access are separate Google grants. Eve can prepare a draft without permission to send it. A real send requires all of the following:
 
-`/demo` is a deliberate product mode, not an authentication exception on private APIs. It never receives Clerk or Gmail credentials and persists only device-local demo preferences. Private Gmail routes still check Clerk on the server.
+1. the draft belongs to the current workspace;
+2. its evidence and tone checks are cleared;
+3. the call carries the draft's matching one-time key;
+4. the user currently has Gmail send permission;
+5. Eve pauses for fresh human approval; and
+6. Nowmal reserves an audit record before calling Gmail.
 
-## Gmail ingestion
+If Gmail's response is ambiguous, the draft becomes `uncertain` and Nowmal will not retry automatically. The user checks Gmail Sent and reconciles it manually. Avoiding one duplicate email is more important than hiding that uncertainty.
 
-The initial pull uses Gmail's search query `newer_than:30d`, stops after 300 thread IDs, and hydrates at concurrency 8. It stores one normalized thread and upserts messages by `(workspace_id, gmail_message_id)`.
+## Who owns what
 
-Later pulls use the mailbox's Gmail `historyId` and request only `messageAdded` changes. An expired history cursor returns 404; the safe recovery is the same bounded 30-day rebuild. Search text is materialized once per thread and GIN-indexed, so search does not repeatedly concatenate messages.
+| Concern | Owner | Why |
+| --- | --- | --- |
+| User identity and Google consent | Clerk | One identity boundary for the app, Eve, and Gmail tokens. |
+| Original email | Gmail | Gmail remains authoritative; Nowmal keeps only a bounded working index. |
+| Threads, messages, work, evidence, drafts, and audits | Vercel-managed Neon | Durable, workspace-scoped state that screens and tools can query efficiently. |
+| Agent sessions and tool orchestration | Eve | Durable conversation and human-in-the-loop tool calls without mixing chat state into mailbox state. |
+| Product UI and server routes | Next.js on Vercel | One deployment contains the shared demo shell, authenticated app, APIs, Eve, and MCP endpoint. |
 
-Eve uses two deliberately separate read paths over that index. `list_recent_threads` performs a queryless, newest-first bounded read for recency questions. `search_threads` performs text matching for a person, subject, or topic. This prevents natural-language requests such as “latest email” from becoming literal full-text searches and falsely reporting an empty inbox.
+## Main flows
 
-The default manual pull hydrates at most 300 threads; the server also enforces an absolute 500-thread ceiling for explicit maintenance calls. Existing thread IDs are removed from expansion batches before Gmail hydration. This controls Gmail quota, data ingestion, and server duration. The next deployment step for large inboxes is to place user-approved continuation batches on Vercel Workflow and connect Gmail watch notifications through Google Pub/Sub.
+### Trying the demo
 
-## Task and promise analysis
+The browser loads the shared shell with a local sample adapter. No Clerk session, Neon connection, Gmail token, or live send path is available.
 
-Indexing and inference are separate operations. Gmail refresh never triggers inference. The connected Setup flow opens an explicit confirmation that states the pending-thread count, model-provider path, per-thread and per-message limits, and the operations that cannot occur. Only the confirmation action analyzes the stored bounded index. An already-connected account can run analysis without making another Gmail request.
+### Connecting and refreshing Gmail
 
-Analysis processes at most 100 pending threads in 16-thread batches with concurrency two. The pending-version predicate runs in Neon before the 100-thread limit, so repeated confirmed passes advance through the whole bounded index instead of repeatedly selecting its already-analyzed newest slice. Each message body is truncated before model input, long threads contribute only their 12 most recent messages, and mailbox text is delimited and treated as untrusted data rather than instructions. The model can propose a work item, but persistence accepts it only when:
+Clerk authenticates the person and provides a Google token with read-only Gmail scope. A refresh normalizes bounded Gmail threads and messages into that person's Neon workspace. It does not run task analysis.
 
-- confidence is at least 0.76;
-- a task cites an inbound message or a promise cites an outbound message;
-- every saved quote can be found in the cited stored message after whitespace normalization;
-- the Gmail thread and message IDs belong to the authenticated workspace; and
-- the due date, status, and bounded field shapes validate.
+### Finding tasks and promises
 
-The deterministic key combines analysis version, item kind, normalized counterparty, stable intent, and an occurrence key only for genuinely recurring work. Candidates with the same key merge before persistence, while `work_item_threads` and `evidence_spans` retain every validated source. A successful batch stamps its source threads with the analysis version; a later Gmail upsert removes that stamp, so only changed threads become pending again. Model or persistence failures leave the stamp absent and are safe to retry.
+After the user confirms the bounded model operation, analysis reads pending Neon records, proposes work and evidence, and passes those proposals through deterministic server validation before saving them. Changed threads become eligible for later re-analysis.
 
-Changed threads also carry their linked open items into the same confirmed analysis. Completion uses a stricter 0.90 confidence floor and is accepted only when the cited message belongs to a source thread, is newer than the item's latest evidence, contains the exact quoted text, and has the required direction: an outbound fulfillment or an inbound cancellation. Mere replies, acknowledgements, scheduling, and model omission cannot close work. The completion quote is appended as evidence and the transition is recorded. A successful approved Nowmal send is an even narrower deterministic case: it closes a linked task, but never a promise or an unrelated item.
+### Asking Eve
 
-## Task and grouping efficiency
+The browser resumes only the current user's current web-chat session. Eve answers through workspace-scoped tools rather than receiving the entire database or mailbox as prompt context. The MCP endpoint uses the same agent and constraints through OAuth/Vercel identity.
 
-- Dedupe is a unique domain key, not a UI heuristic.
-- `work_item_threads` records every merged source so one task can explain why it exists once.
-- Stash metadata lives as bounded JSONB on the work item; frequently filtered fields remain typed columns.
-- Tracker stages are integer positions, making funnel counts a single `stage_index >= N` aggregation.
-- Corrections are append-only events, separate from the current work-item status.
-- Clusters, trackers, and their entries have stable per-workspace keys so renames do not change identity.
-- Eve session IDs are stored separately from product records; agent conversation retention does not determine mailbox retention.
+### Sending a reply
 
-The connected Trackers view derives repeated processes from the bounded workspace snapshot, so it adds no
-mailbox query. Conservative domain classifiers can recognize a job search across different recruiters or
-a housing search across different properties, then map explicit mail language to the familiar process
-stages. At least two source-backed items and more than one thread or counterparty are required; a single
-conversation never becomes a tracker. Unclaimed items still group by repeated counterparty. The snapshot's
-connection, counts, session, threads, work items, evidence, corrections, and drafts are issued as one Neon
-HTTP batch rather than a waterfall. Formal user-named trackers remain normalized in `trackers` and
-`tracker_entries` for a later persistence layer.
+Eve creates or selects a stored draft. Nowmal resolves its checks, verifies the separate Gmail send scope, pauses the actual tool call for approval, and uses an idempotency key plus audit reservation to prevent a blind retry.
 
-Connected Rules is a policy report, not a set of decorative client toggles. It describes the server
-boundaries that actually exist and reads the workspace's append-only correction count. The public
-demo keeps interactive rule switches because it is explicitly a reversible product simulation.
+## Guarantees to preserve
 
-## Send correctness
+- Private screens never substitute demo data.
+- Every private query and agent session is tied to one Clerk workspace.
+- Gmail refresh never silently starts model analysis.
+- Inferred work always points to validated source mail.
+- User corrections survive later analysis.
+- The Now screen and Now count use the same selector.
+- MCP does not bypass browser safety or workspace checks.
+- No email is sent without separate scope, a cleared draft, and fresh approval.
+- An uncertain Gmail send is never retried automatically.
 
-`send_email` is intentionally stricter than an ordinary Gmail wrapper:
+## Current limits and intended next steps
 
-1. Eve can call only the typed tool; shell, filesystem, arbitrary fetch, web search, and recursive-agent tools are disabled.
-2. `always()` creates a durable human approval before every execution.
-3. The draft must be in `cleared` state with zero unresolved checks.
-4. The draft's stored idempotency key must match the call.
-5. An audit event reserves `(workspace_id, idempotency_key)` before Gmail is called.
-6. Gmail receives a deterministic RFC 5322 `Message-ID` derived from that key.
-7. Success stores the Gmail message ID. A repeated successful request returns `already_sent`.
-8. If the draft is linked to an open task, confirmed Gmail success marks that task done and records why.
-9. Any ambiguous failure becomes `uncertain`; the tool refuses to retry until a person reconciles Gmail Sent and creates a new draft if necessary.
+- Gmail synchronization is currently user-triggered. Refreshes are incremental, but there is no Gmail watch subscription yet. The natural next step is Google Pub/Sub plus a durable Vercel workflow for bounded background refreshes.
+- A confirmed analysis pass processes at most 100 pending threads. Large initial indexes may need several passes by design.
+- Connected Trackers are currently conservative views derived from work items. The schema already has tracker tables, but user-named, editable tracker persistence is a later layer.
+- The workspace snapshot intentionally limits rows returned to the UI. Counts and search use server-side queries rather than depending only on what is visible on screen.
+- Search can extend the bounded index by at most ten exact Gmail matches after a local miss. Broader historical imports should remain an explicit maintenance action.
 
-The separate Google scope is `https://www.googleapis.com/auth/gmail.send`; normal indexing uses `https://www.googleapis.com/auth/gmail.readonly`.
+## Code map
 
-On connected-app startup, `/api/gmail/status` reconciles Google authorization once against Clerk's
-token scopes. This call reads authorization metadata, not Gmail. It reconciles both `gmail.readonly`
-and `gmail.send` from one Clerk response. A missing read scope marks the connection
-`reauthorization_required` without deleting the bounded index, tasks, or corrections; refresh pauses
-and Setup links to account review. A Clerk outage returns an unknown status and preserves the last known
-value. The send display flag is never trusted as authority—`send_email` obtains and verifies a current
-token again before reserving the one-shot audit attempt.
+- [`components/nowmal/`](../components/nowmal/) — shared product shell and connected/demo screens
+- [`lib/gmail/`](../lib/gmail/) — Google token use, Gmail client, text normalization, and bounded sync
+- [`lib/data/`](../lib/data/) — Drizzle schema and workspace-scoped repository queries
+- [`lib/workspace/`](../lib/workspace/) — analysis contract, Now queue, workspace snapshot, and tracker derivation
+- [`agent/`](../agent/) — Eve instructions, authentication, session ownership, channels, and typed tools
+- [`app/api/`](../app/api/) — authenticated workspace, search, sync, analysis, and item routes
 
-## Trust boundaries
-
-- Browser → Next APIs: Clerk session, checked again beside each resource mutation.
-- Browser → Eve HTTP channel: Clerk bearer/session verification plus Neon-backed session ownership on every ID-addressed route; production fails closed without both.
-- Same-project Vercel services/MCP → Eve: Vercel OIDC. User-scoped Gmail sends remain available
-  only in an authenticated Clerk user session; a service identity cannot impersonate a mailbox owner.
-- Eve → Gmail: user-scoped Clerk provider token with required-scope verification.
-- Eve → Neon: server-only `DATABASE_URL`; every repository query includes `workspace_id`.
-- Public demo: no path to Gmail, Neon, or real Eve sends.
+Deployment and account setup are documented separately in [External setup](./EXTERNAL-SETUP.md).
