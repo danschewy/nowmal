@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%}
+  body{background:#f2efe7;color:#16150f;font-family:"Bricolage Grotesque","Helvetica Neue",Helvetica,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:oklch(0.62 0.16 25);text-decoration:none}
+  a:hover{color:#16150f}
+  ::selection{background:#16150f;color:#f2efe7}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:#ddd9cd}
+  ::-webkit-scrollbar-track{background:transparent}
+  input,button,textarea{font-family:inherit}
+  input:focus{outline:none}
+  @keyframes mgfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @keyframes mgpulse{0%,100%{opacity:1}50%{opacity:0.28}}
+</style>
+</helmet>
+
+<div style="display:flex; height:100vh; width:100%; overflow-x:auto; overflow-y:hidden; background:#f2efe7">
+
+  <div style="width:236px; flex:0 0 236px; border-right:1px solid #ddd9cd; padding:30px 24px 24px; display:flex; flex-direction:column; gap:30px; min-height:0; overflow-y:auto">
+    <div>
+      <div style="font-size:27px; font-weight:600; letter-spacing:-0.035em; line-height:1">Margin</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.16em; text-transform:uppercase; color:#8a8779; margin-top:8px">A quiet layer over Gmail</div>
+      <input value="{{ query }}" onChange="{{ onQuery }}" placeholder="Search everything" style="width:100%; margin-top:20px; background:transparent; border:none; border-bottom:1px solid #ddd9cd; padding:7px 0; font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.06em; color:#16150f">
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:2px; margin-left:-24px">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="3">
+        <div onClick="{{ n.go }}" style="{{ n.style }}">
+          <span>{{ n.label }}</span>
+          <span style="{{ n.countStyle }}">{{ n.count }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:22px">
+      <sc-for list="{{ nav2 }}" as="n" hint-placeholder-count="2">
+        <div onClick="{{ n.go }}" style="{{ n.style }}">{{ n.label }}</div>
+      </sc-for>
+    </div>
+
+    <div style="border-top:1px solid #ddd9cd; padding-top:16px; display:flex; flex-direction:column; gap:9px">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.04em; color:#16150f">j.ellery@gmail.com</div>
+      <div style="display:flex; align-items:center; gap:7px">
+        <div style="width:6px; height:6px; background:oklch(0.62 0.16 145)"></div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:#8a8779">Synced 2 min ago</div>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:#a8a496; line-height:1.55; margin-top:2px; flex:0 0 auto">Read-only access<br>Nothing sent without you</div>
+    </div>
+  </div>
+
+  <div style="flex:1; min-width:680px; overflow-y:auto; overflow-x:hidden">
+    <div style="max-width:1080px; padding:52px 56px 120px">
+
+      <sc-if value="{{ isFirstRun }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:640px; padding-top:60px">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8779">Not connected</div>
+          <h1 style="font-size:44px; font-weight:500; letter-spacing:-0.04em; line-height:1.06; margin:16px 0 0; max-width:14ch; text-wrap:pretty">There is nothing here yet, and that is correct.</h1>
+          <div style="font-size:17px; line-height:1.6; color:#5c5a50; margin-top:20px; max-width:50ch; text-wrap:pretty">Margin has nothing of its own. Every task, tracker and cluster in it is read out of your mail. Connect the account and the first pass takes about a minute.</div>
+          <div onClick="{{ goSetup }}" style="display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; background:#16150f; color:#f2efe7; padding:14px 20px; cursor:pointer; margin-top:34px">Go to setup</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isTasks }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:20px 32px">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8779; padding-top:9px">Tasks · inferred, never typed</div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px">
+              <div style="display:flex; border:1px solid #ddd9cd">
+                <div onClick="{{ pullLive }}" style="{{ pullLiveStyle }}">
+                  <span style="{{ pullDotStyle }}"></span>Live
+                </div>
+                <div onClick="{{ pullSched }}" style="{{ pullSchedStyle }}">Scheduled</div>
+              </div>
+              <sc-if value="{{ isScheduled }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; gap:6px">
+                  <sc-for list="{{ cadences }}" as="c" hint-placeholder-count="3">
+                    <div onClick="{{ c.go }}" style="{{ c.style }}">{{ c.label }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div style="{{ pullNoteStyle }}">{{ pullNote }}</div>
+            </div>
+          </div>
+          <h1 style="font-size:46px; font-weight:500; letter-spacing:-0.04em; line-height:1.05; margin:16px 0 0; max-width:15ch; text-wrap:pretty">What your inbox is actually asking you to do.</h1>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.05em; color:#5c5a50; margin-top:18px">{{ tasksSubline }}</div>
+
+          <sc-if value="{{ showCollision }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px dashed #c9c5b6; background:#fbf9f4; padding:22px 24px; margin-top:34px">
+              <div style="display:flex; align-items:center; gap:10px">
+                <div style="{{ collisionDot }}"></div>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.16em; text-transform:uppercase; color:#16150f">{{ collisionDay }} is carrying two of the same favour</div>
+              </div>
+              <div style="margin-top:16px">
+                <sc-for list="{{ collisionRows }}" as="c" hint-placeholder-count="2">
+                  <div style="display:grid; grid-template-columns:150px 1fr auto; gap:20px; padding:9px 0; border-top:1px solid #e6e2d6; font-size:14px; align-items:baseline">
+                    <div style="font-weight:500; letter-spacing:-0.015em">{{ c.who }}</div>
+                    <div style="color:#5c5a50">{{ c.what }}</div>
+                    <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:#a8a496">{{ c.why }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-size:13.5px; color:#5c5a50; line-height:1.55; margin-top:14px; max-width:62ch">{{ collisionNote }}</div>
+              <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:18px">
+                <div onClick="{{ resolveCollision }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; background:#16150f; color:#f2efe7; padding:9px 13px; cursor:pointer">Ask Ostler Lane for Monday</div>
+                <div onClick="{{ dismissCollision }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; border:1px solid #ddd9cd; color:#8a8779; padding:9px 13px; cursor:pointer">Both are fine</div>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="display:flex; flex-wrap:wrap; gap:16px 26px; margin-top:38px; border-bottom:1px solid #ddd9cd; padding-bottom:12px">
+            <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5">
+              <div onClick="{{ f.go }}" style="{{ f.style }}">{{ f.label }} <span style="{{ f.numStyle }}">{{ f.count }}</span></div>
+            </sc-for>
+          </div>
+
+          <sc-for list="{{ tasks }}" as="t" hint-placeholder-count="6">
+            <div style="border-bottom:1px solid #ddd9cd">
+              <div onClick="{{ t.toggle }}" style="{{ t.rowStyle }}">
+                <div style="{{ t.glyph }}"></div>
+                <div style="min-width:0">
+                  <div style="{{ t.titleStyle }}">{{ t.title }}</div>
+                  <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.13em; text-transform:uppercase; color:#8a8779; margin-top:7px">{{ t.meta }}</div>
+                  <sc-if value="{{ t.showPeek }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:14px; color:#5c5a50; margin-top:10px; max-width:62ch; line-height:1.5">&ldquo;{{ t.ev1 }}<span style="{{ t.hiStyle }}">{{ t.ev2 }}</span>{{ t.ev3 }}&rdquo;</div>
+                  </sc-if>
+                </div>
+                <div style="{{ t.dueStyle }}">{{ t.dueLabel }}</div>
+              </div>
+
+              <sc-if value="{{ t.open }}" hint-placeholder-val="{{ false }}">
+                <div style="display:grid; grid-template-columns:1.35fr 1fr; gap:52px; padding:2px 0 34px 32px; animation:mgfade .18s ease both">
+                  <div>
+                    <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8779">Evidence</div>
+                    <div style="font-size:18px; line-height:1.55; margin-top:14px; letter-spacing:-0.01em; text-wrap:pretty">&ldquo;{{ t.ev1 }}<span style="{{ t.hiStyle }}">{{ t.ev2 }}</span>{{ t.ev3 }}&rdquo;</div>
+                    <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; color:#8a8779; margin-top:16px">{{ t.src }}</div>
+                    <div style="display:flex; gap:9px; align-items:flex-start; margin-top:22px; padding-top:16px; border-top:1px solid #e6e2d6">
+                      <div style="{{ t.linDot }}"></div>
+                      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; line-height:1.7; color:#5c5a50; letter-spacing:0.02em">{{ t.lin }}</div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8779">Stashed</div>
+                    <div style="margin-top:14px; display:flex; flex-direction:column">
+                      <sc-for list="{{ t.fields }}" as="f" hint-placeholder-count="5">
+                        <div style="display:grid; grid-template-columns:76px 1fr; gap:12px; padding:6px 0; border-bottom:1px solid #e6e2d6; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.02em">
+                          <div style="color:#a8a496; text-transform:uppercase; letter-spacing:0.1em">{{ f.k }}</div>
+                          <div style="color:#16150f">{{ f.v }}</div>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:20px">
+                      <div onClick="{{ t.done }}" style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; background:#16150f; color:#f2efe7; padding:9px 13px; cursor:pointer">{{ t.doneLabel }}</div>
+                      <div onClick="{{ t.ask }}" style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; border:1px solid #16150f; padding:9px 13px; cursor:pointer" style-hover="background:#16150f;color:#f2efe7">Ask Eve</div>
+                      <div onClick="{{ t.snooze }}" style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; border:1px solid #ddd9cd; color:#5c5a50; padding:9px 13px; cursor:pointer" style-hover="border-color:#16150f;color:#16150f">Snooze</div>
+                      <div onClick="{{ t.notTask }}" style="{{ t.notTaskStyle }}">{{ t.notTaskLabel }}</div>
+                    </div>
+                    <sc-if value="{{ t.snoozing }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; animation:mgfade .18s ease both">
+                        <sc-for list="{{ t.snoozeOpts }}" as="s" hint-placeholder-count="4">
+                          <div onClick="{{ s.go }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.11em; text-transform:uppercase; border:1px solid #c9c5b6; padding:8px 11px; cursor:pointer" style-hover="border-color:#16150f;background:#16150f;color:#f2efe7">{{ s.label }}</div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                    <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:#c9c5b6; line-height:1.8; margin-top:14px">Wrong inference? Not a task tells Eve, and she stops<br>reading that shape of sentence as an ask.</div>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:#a8a496; margin-top:28px; line-height:1.9">{{ dedupeNote }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isPipeline }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8779">Trackers · built out of your mail, named by you</div>
+
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:22px">
+            <sc-for list="{{ trackerTabs }}" as="t" hint-placeholder-count="2">
+              <div onClick="{{ t.go }}" style="{{ t.style }}">{{ t.label }}</div>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ trackerEmpty }}" hint-placeholder-val="{{ false }}">
+            <h1 style="font-size:46px; font-weight:500; letter-spacing:-0.04em; line-height:1.05; margin:26px 0 0; text-wrap:pretty">Nothing tracked</h1>
+          </sc-if>
+          <sc-if value="{{ notRenaming }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-top:26px">
+              <h1 style="font-size:46px; font-weight:500; letter-spacing:-0.04em; line-height:1.05; margin:0; text-wrap:pretty">{{ trackerName }}</h1>
+              <div onClick="{{ startRename }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:#a8a496; cursor:pointer; border-bottom:1px solid #ddd9cd; padding-bottom:2px" style-hover="color:#16150f;border-color:#16150f">Rename</div>
+              <div onClick="{{ stopTracking }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:#a8a496; cursor:pointer; border-bottom:1px solid #ddd9cd; padding-bottom:2px" style-hover="color:#16150f;border-color:#16150f">Stop tracking</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ renaming }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-top:26px">
+              <input value="{{ renameVal }}" onChange="{{ onRename }}" onKeyDown="{{ onRenameKey }}" autoFocus="{{ true }}" style="font-family:'Bricolage Grotesque',sans-serif; font-size:46px; font-weight:500; letter-spacing:-0.04em; line-height:1.05; background:transparent; border:none; border-bottom:2px solid #16150f; padding:0 0 4px; color:#16150f; min-width:340px">
+              <div onClick="{{ commitRename }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; background:#16150f; color:#f2efe7; padding:9px 13px; cursor:pointer">Save</div>
+            </div>
+          </sc-if>
+
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.05em; color:#5c5a50; margin-top:16px; line-height:1.8">{{ trackerNote }}</div>
+
+          <sc-if value="{{ hasTrackerSuggestion }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid; grid-template-columns:5px 1fr auto; gap:16px; align-items:center; border:1px dashed #c9c5b6; background:#fbf9f4; padding:20px 22px; margin-top:32px">
+              <div style="{{ suggestDot }}; width:5px; height:5px; align-self:start; margin-top:6px"></div>
+              <div>
+                <div style="font-size:17px; font-weight:500; letter-spacing:-0.02em">{{ trackerSuggestName }}</div>
+                <div style="font-size:13.5px; color:#8a8779; margin-top:6px; line-height:1.55; max-width:58ch">{{ trackerSuggestWhy }}</div>
+              </div>
+              <div style="display:flex; gap:8px">
+                <div onClick="{{ acceptTracker }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; background:#16150f; color:#f2efe7; padding:9px 13px; cursor:pointer; white-space:nowrap">Track it</div>
+                <div onClick="{{ dismissTracker }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; border:1px solid #ddd9cd; color:#8a8779; padding:9px 13px; cursor:pointer; white-space:nowrap">No</div>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="display:grid; grid-template-columns:repeat(5,1fr); border-top:1px solid #16150f; margin-top:40px">
+            <sc-for list="{{ stages }}" as="s" hint-placeholder-count="5">
+              <div style="{{ s.style }}">
+                <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.15em; text-transform:uppercase; color:#8a8779">{{ s.name }}</div>
+                <div style="font-size:34px; font-weight:400; letter-spacing:-0.03em; margin-top:10px">{{ s.count }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="margin-top:42px; border-top:1px solid #ddd9cd">
+            <sc-for list="{{ prospects }}" as="p" hint-placeholder-count="6">
+              <div onClick="{{ p.toggle }}" style="{{ p.rowStyle }}">
+                <div style="min-width:0">
+                  <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap">
+                    <div style="font-size:20px; font-weight:500; letter-spacing:-0.02em">{{ p.co }}</div>
+                    <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:#8a8779">{{ p.role }}</div>
+                  </div>
+                  <div style="font-size:13.5px; color:#5c5a50; margin-top:7px; line-height:1.5">{{ p.signal }}</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:0">
+                  <sc-for list="{{ p.dots }}" as="d" hint-placeholder-count="5">
+                    <div style="{{ d.line }}"></div>
+                  </sc-for>
+                </div>
+                <div style="text-align:right">
+                  <div style="{{ p.ageStyle }}">{{ p.age }}</div>
+                  <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.11em; text-transform:uppercase; color:#a8a496; margin-top:5px">{{ p.stage }}</div>
+                </div>
+                <sc-if value="{{ p.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:8px; padding-top:6px; animation:mgfade .18s ease both">
+                    <div onClick="{{ p.advance }}" style="{{ p.advanceStyle }}">{{ p.advanceLabel }}</div>
+                    <div onClick="{{ p.close }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; border:1px solid #ddd9cd; color:#5c5a50; padding:8px 12px; cursor:pointer" style-hover="border-color:#16150f;color:#16150f">{{ p.closeLabel }}</div>
+                    <div onClick="{{ p.drop }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; border:1px solid #ddd9cd; color:#a8a496; padding:8px 12px; cursor:pointer" style-hover="border-color:#16150f;color:#16150f">Not a real one</div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isMail }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8779">Mail · 275 threads, 4 clusters</div>
+          <h1 style="font-size:46px; font-weight:500; letter-spacing:-0.04em; line-height:1.05; margin:16px 0 0; max-width:17ch; text-wrap:pretty">Sorted by what it is about, not when it arrived.</h1>
+
+          <sc-if value="{{ hasClusterSuggestions }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:38px; border-top:1px dashed #c9c5b6">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.18em; text-transform:uppercase; color:#a8a496; padding-top:14px">Eve noticed a pattern</div>
+              <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="2">
+                <div style="display:grid; grid-template-columns:5px 1fr auto; gap:16px; align-items:center; padding:16px 2px; border-bottom:1px dashed #e0dccf">
+                  <div style="{{ s.dot }}"></div>
+                  <div>
+                    <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap">
+                      <div style="font-size:16.5px; font-weight:500; letter-spacing:-0.02em">{{ s.name }}</div>
+                      <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; color:#a8a496">{{ s.count }}</div>
+                    </div>
+                    <div style="font-size:13.5px; color:#8a8779; margin-top:6px; line-height:1.55; max-width:60ch">{{ s.why }}</div>
+                  </div>
+                  <div style="display:flex; gap:8px">
+                    <div onClick="{{ s.accept }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; border:1px solid #16150f; padding:8px 12px; cursor:pointer; white-space:nowrap" style-hover="background:#16150f;color:#f2efe7">Make a cluster</div>
+                    <div onClick="{{ s.dismiss }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; border:1px solid #ddd9cd; color:#8a8779; padding:8px 12px; cursor:pointer; white-space:nowrap">Not a thing</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <div style="{{ clusterGridStyle }}">
+            <sc-for list="{{ clusters }}" as="c" hint-placeholder-count="4">
+              <div onClick="{{ c.go }}" style="{{ c.style }}">
+                <div style="display:flex; justify-content:space-between; align-items:baseline; gap:14px">
+                  <div style="font-size:17px; font-weight:500; letter-spacing:-0.02em; min-width:0">{{ c.name }}</div>
+                  <div style="font-family:'JetBrains Mono',monospace; font-size:11px; flex:0 0 auto">{{ c.n }}</div>
+                </div>
+                <div style="{{ c.noteStyle }}">{{ c.note }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; margin-top:16px">
+            <sc-if value="{{ notRenamingCluster }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px">
+                <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; color:#a8a496">{{ selectedClusterLabel }}</div>
+                <div onClick="{{ startClusterRename }}" style="{{ clusterActStyle }}">Rename</div>
+                <div onClick="{{ muteCluster }}" style="{{ clusterActStyle }}">{{ muteLabel }}</div>
+                <div onClick="{{ deleteCluster }}" style="{{ clusterActStyle }}">Delete</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ renamingCluster }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; align-items:center; gap:10px">
+                <input value="{{ clusterRenameVal }}" onChange="{{ onClusterRename }}" onKeyDown="{{ onClusterRenameKey }}" autoFocus="{{ true }}" style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; background:transparent; border:none; border-bottom:1px solid #16150f; padding:5px 0; color:#16150f; min-width:220px">
+                <div onClick="{{ commitClusterRename }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; background:#16150f; color:#f2efe7; padding:7px 11px; cursor:pointer">Save</div>
+              </div>
+            </sc-if>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.09em; text-transform:uppercase; color:#c9c5b6">Deleting a cluster never deletes mail. Threads go back to Everything Else.</div>
+          </div>
+
+          <sc-if value="{{ hasBin }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ toggleBin }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; color:#a8a496; cursor:pointer; margin-top:18px; border-bottom:1px solid #ddd9cd; display:inline-block; padding-bottom:2px" style-hover="color:#16150f;border-color:#16150f">{{ binLabel }}</div>
+          </sc-if>
+
+          <div style="margin-top:38px">
+            <sc-for list="{{ threads }}" as="m" hint-placeholder-count="6">
+              <div onClick="{{ m.toggle }}" style="{{ m.rowStyle }}">
+                <div>
+                  <div style="font-size:14px; font-weight:500; letter-spacing:-0.01em">{{ m.from }}</div>
+                  <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:#a8a496; margin-top:5px">{{ m.when }}</div>
+                </div>
+                <div style="min-width:0">
+                  <div style="font-size:15.5px; letter-spacing:-0.01em">{{ m.subject }}</div>
+                  <div style="display:flex; gap:9px; margin-top:8px; align-items:flex-start">
+                    <div style="{{ m.dot }}"></div>
+                    <div style="font-size:13px; color:#5c5a50; line-height:1.5">{{ m.eve }}</div>
+                  </div>
+                  <sc-if value="{{ m.open }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:18px; padding:18px 20px; background:#fbf9f4; border-left:2px solid #16150f; animation:mgfade .18s ease both">
+                      <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.16em; text-transform:uppercase; color:#a8a496">{{ m.readerHead }}</div>
+                      <div style="font-size:16px; line-height:1.6; margin-top:12px; letter-spacing:-0.01em; text-wrap:pretty">&ldquo;{{ m.quote }}&rdquo;</div>
+                      <div style="font-size:13px; color:#5c5a50; line-height:1.55; margin-top:14px; max-width:58ch">{{ m.outcome }}</div>
+                      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:16px">
+                        <div onClick="{{ m.openGmail }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; border:1px solid #16150f; padding:8px 12px; cursor:pointer" style-hover="background:#16150f;color:#f2efe7">Open in Gmail</div>
+                        <div onClick="{{ m.mute }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; border:1px solid #ddd9cd; color:#8a8779; padding:8px 12px; cursor:pointer">Stop reading this thread</div>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+                <div style="{{ m.pillStyle }}">{{ m.pill }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isBrief }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:760px">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8779">Brief · Saturday 16 August, 09:00</div>
+          <h1 style="font-size:46px; font-weight:500; letter-spacing:-0.04em; line-height:1.05; margin:16px 0 0; max-width:13ch; text-wrap:pretty">Six lines, then you can go.</h1>
+          <div style="font-size:17px; line-height:1.6; color:#5c5a50; margin-top:20px; max-width:52ch; text-wrap:pretty">Everything that changed since 16:00 yesterday. Eve writes this at your pull times and nowhere else, so there is nothing to check between them.</div>
+
+          <div style="margin-top:44px; border-top:1px solid #16150f">
+            <sc-for list="{{ brief }}" as="b" hint-placeholder-count="6">
+              <div onClick="{{ b.go }}" style="display:grid; grid-template-columns:96px 1fr; gap:24px; padding:19px 2px; border-bottom:1px solid #ddd9cd; cursor:pointer; align-items:baseline" style-hover="background:#fbf9f4">
+                <div style="{{ b.tagStyle }}">{{ b.tag }}</div>
+                <div style="font-size:16px; line-height:1.55; letter-spacing:-0.01em; text-wrap:pretty">{{ b.text }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:34px">
+            <div onClick="{{ startSession }}" style="font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; background:#16150f; color:#f2efe7; padding:14px 20px; cursor:pointer">Start the session</div>
+            <div onClick="{{ markBriefRead }}" style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.13em; text-transform:uppercase; color:#8a8779; cursor:pointer; padding:14px 6px" style-hover="color:#16150f">{{ briefReadLabel }}</div>
+            <div style="flex:1"></div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:#a8a496">{{ nextBrief }}</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isPromises }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:880px">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8779">Promises · read out of your sent mail</div>
+          <h1 style="font-size:46px; font-weight:500; letter-spacing:-0.04em; line-height:1.05; margin:16px 0 0; max-width:14ch; text-wrap:pretty">The things you said you would do.</h1>
+          <div style="font-size:17px; line-height:1.6; color:#5c5a50; margin-top:20px; max-width:54ch; text-wrap:pretty">Tasks come from what people ask of you. These come from what you wrote back. Same evidence, opposite direction, and the one nobody tracks.</div>
+
+          <div style="display:flex; gap:26px; margin-top:38px; border-bottom:1px solid #ddd9cd; padding-bottom:12px">
+            <sc-for list="{{ promFilters }}" as="f" hint-placeholder-count="4">
+              <div onClick="{{ f.go }}" style="{{ f.style }}">{{ f.label }} <span style="color:#a8a496; margin-left:4px">{{ f.count }}</span></div>
+            </sc-for>
+          </div>
+
+          <sc-for list="{{ promises }}" as="p" hint-placeholder-count="6">
+            <div style="border-bottom:1px solid #ddd9cd; padding:20px 4px">
+              <div style="display:grid; grid-template-columns:14px 1fr auto; gap:18px; align-items:start">
+                <div style="{{ p.glyph }}"></div>
+                <div style="min-width:0">
+                  <div style="{{ p.quoteStyle }}">&ldquo;{{ p.quote }}&rdquo;</div>
+                  <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:#8a8779; margin-top:9px">You wrote this · {{ p.said }} · to {{ p.to }}</div>
+                  <div style="font-size:13.5px; color:#5c5a50; line-height:1.55; margin-top:10px; max-width:62ch">{{ p.ctx }}</div>
+                  <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:16px">
+                    <div onClick="{{ p.keep }}" style="{{ p.keepStyle }}">{{ p.keepLabel }}</div>
+                    <div onClick="{{ p.own }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; border:1px solid #ddd9cd; color:#5c5a50; padding:8px 12px; cursor:pointer" style-hover="border-color:#16150f;color:#16150f">Say it will be late</div>
+                  </div>
+                </div>
+                <div style="{{ p.dueStyle }}">{{ p.due }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:820px">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8779">{{ searchEyebrow }}</div>
+          <h1 style="font-size:38px; font-weight:500; letter-spacing:-0.035em; line-height:1.1; margin:16px 0 0; text-wrap:pretty">{{ searchHeading }}</h1>
+          <div style="margin-top:40px">
+            <sc-for list="{{ results }}" as="r" hint-placeholder-count="4">
+              <div onClick="{{ r.go }}" style="display:grid; grid-template-columns:96px 1fr; gap:24px; padding:18px 2px; border-bottom:1px solid #ddd9cd; cursor:pointer; align-items:baseline" style-hover="background:#fbf9f4">
+                <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:#a8a496">{{ r.kind }}</div>
+                <div>
+                  <div style="font-size:16px; letter-spacing:-0.015em; line-height:1.4">{{ r.title }}</div>
+                  <div style="font-size:13px; color:#8a8779; margin-top:6px; line-height:1.5">{{ r.sub }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isNow }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:800px">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8779">Now · focused session</div>
+          <h1 style="font-size:46px; font-weight:500; letter-spacing:-0.04em; line-height:1.05; margin:16px 0 0; max-width:14ch; text-wrap:pretty">One at a time, until they are gone.</h1>
+
+          <div style="display:flex; align-items:center; gap:16px; margin-top:26px">
+            <div style="display:flex; gap:5px">
+              <sc-for list="{{ sessionDots }}" as="d" hint-placeholder-count="3">
+                <div style="{{ d.style }}"></div>
+              </sc-for>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.11em; text-transform:uppercase; color:#8a8779">{{ sessionLabel }}</div>
+          </div>
+
+          <sc-if value="{{ nowActive }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <div style="font-size:28px; font-weight:500; letter-spacing:-0.03em; line-height:1.2; margin-top:40px; text-wrap:pretty">{{ nowTitle }}</div>
+              <div style="display:flex; gap:10px; align-items:flex-start; margin-top:14px; max-width:62ch">
+                <div style="{{ nowEvDot }}"></div>
+                <div style="font-size:14px; line-height:1.55; color:#5c5a50">&ldquo;{{ nowEv }}&rdquo; <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; color:#a8a496">&nbsp;{{ nowSrc }}</span></div>
+              </div>
+
+              <div style="border:1px solid #16150f; background:#fbf9f4; margin-top:30px">
+                <div style="display:grid; grid-template-columns:60px 1fr; gap:12px; padding:14px 20px; border-bottom:1px solid #e6e2d6; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase">
+                  <div style="color:#a8a496">To</div><div>{{ nowTo }}</div>
+                </div>
+                <div style="display:grid; grid-template-columns:60px 1fr; gap:12px; padding:14px 20px; border-bottom:1px solid #e6e2d6; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase">
+                  <div style="color:#a8a496">Subject</div><div>{{ nowSubj }}</div>
+                </div>
+                <div style="padding:26px 20px; font-size:16.5px; line-height:1.65; letter-spacing:-0.01em; white-space:pre-wrap">{{ nowDraftA }}<span style="{{ nowSlotStyle }}">{{ nowSlot }}</span>{{ nowDraftB }}</div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:44px; border-bottom:1px solid #16150f; padding-bottom:12px">
+                <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase">Before this sends</div>
+                <div style="{{ gateCountStyle }}">{{ gateCount }}</div>
+              </div>
+
+              <sc-for list="{{ checks }}" as="c" hint-placeholder-count="3">
+                <div style="border-bottom:1px solid #ddd9cd; padding:17px 2px">
+                  <div onClick="{{ c.go }}" style="{{ c.rowStyle }}">
+                    <div style="{{ c.mark }}"></div>
+                    <div style="font-size:15.5px; letter-spacing:-0.015em; line-height:1.4">{{ c.text }}</div>
+                    <div style="{{ c.tagStyle }}">{{ c.tag }}</div>
+                  </div>
+                  <sc-if value="{{ c.expand }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding:16px 0 4px 30px; animation:mgfade .18s ease both">
+                      <div style="font-size:14.5px; color:#16150f; line-height:1.55; max-width:56ch">{{ c.ask }}</div>
+                      <div style="font-size:13px; color:#8a8779; line-height:1.55; margin-top:7px; max-width:56ch">{{ c.note }}</div>
+                      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:16px">
+                        <sc-for list="{{ c.options }}" as="o" hint-placeholder-count="2">
+                          <div onClick="{{ o.go }}" style="{{ o.style }}">{{ o.label }}</div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+
+              <div style="display:flex; align-items:center; gap:14px; margin-top:34px">
+                <div onClick="{{ sendNow }}" style="{{ sendStyle }}">{{ sendLabel }}</div>
+                <div onClick="{{ skipNow }}" style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.13em; text-transform:uppercase; color:#8a8779; cursor:pointer; padding:12px 6px" style-hover="color:#16150f">Skip for now</div>
+                <div style="flex:1"></div>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:#a8a496; text-align:right; line-height:1.8">{{ gateNote }}</div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ nowFinished }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:52px; border-top:1px solid #16150f; padding-top:30px">
+              <div style="font-size:30px; font-weight:500; letter-spacing:-0.03em">Cleared.</div>
+              <div style="font-size:16px; color:#5c5a50; line-height:1.6; margin-top:14px; max-width:48ch">Nothing else in your inbox is waiting on you today. Eve will keep reading and put anything new here.</div>
+              <div style="margin-top:30px; display:flex; flex-direction:column; gap:9px">
+                <sc-for list="{{ ledger }}" as="l" hint-placeholder-count="3">
+                  <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.08em; color:#5c5a50">{{ l.line }}</div>
+                </sc-for>
+              </div>
+              <div onClick="{{ restart }}" style="display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.13em; text-transform:uppercase; border:1px solid #16150f; padding:11px 15px; cursor:pointer; margin-top:32px" style-hover="background:#16150f;color:#f2efe7">Run it again</div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isAgents }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:900px">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8779">Agents · model context protocol</div>
+          <h1 style="font-size:46px; font-weight:500; letter-spacing:-0.04em; line-height:1.05; margin:16px 0 0; max-width:15ch; text-wrap:pretty">Other agents can work here. Same gates.</h1>
+          <div style="font-size:17px; line-height:1.6; color:#5c5a50; margin-top:20px; max-width:56ch; text-wrap:pretty">Margin exposes your tasks, evidence and stashed metadata over MCP, so an agent you already use can read the state and do the work. What it cannot do is clear a gate. Anything that leaves your account still stops at Now, with a person on the other side of it.</div>
+
+          <div style="border:1px solid #16150f; background:#fbf9f4; margin-top:40px">
+            <div style="display:grid; grid-template-columns:96px 1fr auto; gap:16px; align-items:center; padding:16px 20px; border-bottom:1px solid #e6e2d6">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:#a8a496">Endpoint</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">https://mcp.margin.app/sse/j-ellery</div>
+              <div onClick="{{ copyEndpoint }}" style="{{ copyStyle }}">{{ copyLabel }}</div>
+            </div>
+            <div style="display:grid; grid-template-columns:96px 1fr auto; gap:16px; align-items:center; padding:16px 20px; border-bottom:1px solid #e6e2d6">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:#a8a496">Token</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8a8779">mgn_live_························7f21</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; border:1px solid #ddd9cd; color:#5c5a50; padding:8px 12px; cursor:pointer" style-hover="border-color:#16150f;color:#16150f">Rotate</div>
+            </div>
+            <div style="display:grid; grid-template-columns:96px 1fr; gap:16px; align-items:center; padding:16px 20px">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:#a8a496">Transport</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:#5c5a50">SSE · read scope by default · every call logged below</div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:52px; border-bottom:1px solid #16150f; padding-bottom:12px">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase">Tools exposed</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; color:#a8a496">{{ toolSummary }}</div>
+          </div>
+          <sc-for list="{{ tools }}" as="t" hint-placeholder-count="7">
+            <div style="display:grid; grid-template-columns:1fr 108px 96px; gap:28px; align-items:center; padding:16px 2px; border-bottom:1px solid #ddd9cd">
+              <div style="min-width:0">
+                <div style="font-family:'JetBrains Mono',monospace; font-size:12.5px; letter-spacing:0.01em">{{ t.name }}</div>
+                <div style="font-size:13.5px; color:#8a8779; margin-top:6px; line-height:1.5; max-width:56ch">{{ t.note }}</div>
+              </div>
+              <div style="{{ t.scopeStyle }}">{{ t.scope }}</div>
+              <div onClick="{{ t.go }}" style="{{ t.switchStyle }}">{{ t.switchLabel }}</div>
+            </div>
+          </sc-for>
+
+          <div style="display:flex; gap:12px; align-items:flex-start; margin-top:26px; max-width:60ch">
+            <div style="{{ gateDot }}"></div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:10px; line-height:1.9; color:#5c5a50; letter-spacing:0.03em">send_email is not a tool and will not become one.<br>An agent can fill a draft and answer evidence checks it can source.<br>The tone check, and the send, stay with you.</div>
+          </div>
+
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; margin-top:56px; border-bottom:1px solid #16150f; padding-bottom:12px">Connected</div>
+          <sc-for list="{{ agents }}" as="a" hint-placeholder-count="3">
+            <div style="display:grid; grid-template-columns:1fr auto auto; gap:28px; align-items:center; padding:18px 2px; border-bottom:1px solid #ddd9cd">
+              <div>
+                <div style="display:flex; align-items:center; gap:10px">
+                  <div style="{{ a.dot }}"></div>
+                  <div style="font-size:17px; font-weight:500; letter-spacing:-0.02em">{{ a.name }}</div>
+                </div>
+                <div style="font-size:13.5px; color:#8a8779; margin-top:6px; line-height:1.5; padding-left:20px">{{ a.last }}</div>
+              </div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.11em; text-transform:uppercase; color:#a8a496; white-space:nowrap">{{ a.calls }}</div>
+              <div onClick="{{ a.revoke }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; border:1px solid #ddd9cd; color:#5c5a50; padding:8px 12px; cursor:pointer; white-space:nowrap" style-hover="border-color:#16150f;color:#16150f">{{ a.action }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSetup }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:720px">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8779">Setup · step 2 of 3</div>
+          <h1 style="font-size:46px; font-weight:500; letter-spacing:-0.04em; line-height:1.05; margin:16px 0 0; max-width:15ch; text-wrap:pretty">Margin reads. It does not write.</h1>
+          <div style="font-size:17px; line-height:1.6; color:#5c5a50; margin-top:20px; max-width:56ch; text-wrap:pretty">Connect the account you actually use. Eve reads the last ninety days once, then only new mail as it lands. Nothing leaves your account, and nothing is sent on your behalf unless you press send yourself.</div>
+
+          <div style="border:1px solid #16150f; padding:26px 26px 24px; margin-top:40px; display:flex; align-items:center; justify-content:space-between; gap:24px; background:#fbf9f4">
+            <div>
+              <div style="font-size:19px; font-weight:500; letter-spacing:-0.02em">j.ellery@gmail.com</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:#8a8779; margin-top:8px">Read-only · 90 days · 4,118 threads found</div>
+            </div>
+            <div style="{{ connectStyle }}" onClick="{{ connect }}">{{ connectLabel }}</div>
+          </div>
+
+          <div style="height:2px; background:#e6e2d6; margin-top:20px; overflow:hidden">
+            <div style="{{ scanBarStyle }}"></div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:#8a8779; margin-top:10px">{{ scanLabel }}</div>
+
+          <div style="margin-top:52px; border-top:1px solid #16150f">
+            <sc-for list="{{ permissions }}" as="p" hint-placeholder-count="4">
+              <div style="display:grid; grid-template-columns:22px 1fr auto; gap:16px; padding:18px 2px; border-bottom:1px solid #ddd9cd; align-items:baseline">
+                <div style="{{ p.mark }}">{{ p.glyph }}</div>
+                <div>
+                  <div style="font-size:16px; letter-spacing:-0.015em">{{ p.label }}</div>
+                  <div style="font-size:13.5px; color:#8a8779; margin-top:5px; line-height:1.5">{{ p.note }}</div>
+                </div>
+                <div style="{{ p.tagStyle }}">{{ p.tag }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isRules }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:860px">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#8a8779">Rules · what Eve is allowed to infer</div>
+          <h1 style="font-size:46px; font-weight:500; letter-spacing:-0.04em; line-height:1.05; margin:16px 0 0; max-width:16ch; text-wrap:pretty">You decide how far Eve gets to go.</h1>
+          <div style="font-size:17px; line-height:1.6; color:#5c5a50; margin-top:20px; max-width:54ch; text-wrap:pretty">Every rule has three settings. Off means Eve never looks. Suggest means she writes it down and waits. Act means she does it and tells you, with an undo.</div>
+
+          <div style="margin-top:44px; border-top:1px solid #16150f">
+            <sc-for list="{{ rules }}" as="r" hint-placeholder-count="6">
+              <div style="display:grid; grid-template-columns:1fr 246px; gap:40px; padding:20px 2px; border-bottom:1px solid #ddd9cd; align-items:center">
+                <div>
+                  <div style="font-size:17px; font-weight:500; letter-spacing:-0.02em">{{ r.label }}</div>
+                  <div style="font-size:13.5px; color:#8a8779; margin-top:6px; line-height:1.55; max-width:52ch">{{ r.note }}</div>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(3,1fr); border:1px solid #ddd9cd">
+                  <sc-for list="{{ r.opts }}" as="o" hint-placeholder-count="3">
+                    <div onClick="{{ o.go }}" style="{{ o.style }}">{{ o.label }}</div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; margin-top:56px; border-bottom:1px solid #16150f; padding-bottom:12px">What Eve learned from you</div>
+          <sc-for list="{{ learned }}" as="l" hint-placeholder-count="5">
+            <div style="display:grid; grid-template-columns:14px 1fr; gap:16px; padding:14px 2px; border-bottom:1px solid #ddd9cd; align-items:baseline">
+              <div style="{{ l.dot }}"></div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; line-height:1.7; color:#5c5a50; letter-spacing:0.02em">{{ l.text }}</div>
+            </div>
+          </sc-for>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:#c9c5b6; line-height:1.9; margin-top:16px">Corrections are the only training signal here.<br>Nothing you write is used to train anything outside this account.</div>
+
+          <div style="margin-top:46px; display:flex; gap:26px; align-items:flex-start">
+            <div style="width:5px; height:5px; margin-top:8px; background:oklch(0.62 0.16 145); flex:0 0 5px"></div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:10px; line-height:1.9; color:#5c5a50; letter-spacing:0.03em">Clusters are created when Eve sees a subject repeat across senders.<br>Places to Live appeared on Aug 9, after four letting agents in one week.<br>You can delete a cluster. Eve will not propose it again.</div>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <div style="{{ eveWrapStyle }}">
+    <div style="display:flex; flex-direction:column; height:100%; overflow:hidden">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:22px 22px 16px; border-bottom:1px solid rgba(242,239,231,0.14)">
+        <div style="display:flex; align-items:center; gap:9px">
+          <div style="width:7px; height:7px; background:oklch(0.62 0.16 145)"></div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.22em; text-transform:uppercase">Eve</div>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(242,239,231,0.42)">Reading your mail</div>
+      </div>
+
+      <div data-eve-scroll="1" style="flex:1; overflow-y:auto; padding:22px; display:flex; flex-direction:column; gap:22px">
+        <sc-for list="{{ eveMsgs }}" as="m" hint-placeholder-count="2">
+          <div style="{{ m.wrap }}">
+            <div style="{{ m.label }}">{{ m.who }}</div>
+            <div style="{{ m.body }}">{{ m.text }}</div>
+            <sc-if value="{{ m.hasDraft }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:12px; border:1px solid rgba(242,239,231,0.22); padding:14px; font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.75; color:rgba(242,239,231,0.9); white-space:pre-wrap">{{ m.draft }}</div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="padding:0 22px 16px; display:flex; flex-wrap:wrap; gap:7px">
+        <sc-for list="{{ eveChips }}" as="c" hint-placeholder-count="3">
+          <div onClick="{{ c.go }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; border:1px solid rgba(242,239,231,0.32); padding:8px 11px; cursor:pointer; color:#f2efe7" style-hover="background:#f2efe7;color:#16150f;border-color:#f2efe7">{{ c.label }}</div>
+        </sc-for>
+      </div>
+
+      <div style="border-top:1px solid rgba(242,239,231,0.14); padding:14px 22px 18px; display:flex; gap:10px; align-items:center">
+        <input value="{{ eveInput }}" onChange="{{ onEveInput }}" onKeyDown="{{ onEveKey }}" placeholder="Ask about your inbox" style="flex:1; background:transparent; border:none; color:#f2efe7; font-size:13.5px; letter-spacing:-0.01em; padding:4px 0">
+        <div onClick="{{ sendEve }}" style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:rgba(242,239,231,0.5); cursor:pointer" style-hover="color:#f2efe7">Send</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ toastStyle }}">
+    <span>{{ toastText }}</span>
+    <span onClick="{{ undo }}" style="text-decoration:underline; cursor:pointer; margin-left:16px">Undo</span>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;oklch(0.62 0.16 25)&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;oklch(0.62 0.16 25)&quot;,&quot;oklch(0.62 0.16 75)&quot;,&quot;oklch(0.62 0.16 250)&quot;,&quot;oklch(0.62 0.16 320)&quot;],&quot;section&quot;:&quot;Look&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Balanced&quot;,&quot;options&quot;:[&quot;Airy&quot;,&quot;Balanced&quot;,&quot;Dense&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Look&quot;},&quot;showEvidenceInline&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behaviour&quot;},&quot;showConfidence&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
+const RUST = 'oklch(0.62 0.16 25)';
+const MOSS = 'oklch(0.62 0.16 145)';
+const MONO = "'JetBrains Mono',monospace";
+
+const TASKS = [
+  { id:'t1', st:'now', title:'Send Kestrel the two references they asked for',
+    co:'Kestrel Labs', stage:'Onsite', due:'Today', conf:0.94,
+    ev:['Great to meet you Thursday. Before we take you to the panel, ','could you send over two references by end of day Friday','? Either format is fine.'],
+    src:'Dana Whitfield · Kestrel Labs · Aug 14, 09:12',
+    lin:'2 threads merged. Deduped against the Aug 12 request so this only asks you once.',
+    fields:[['Company','Kestrel Labs'],['Role','Senior Product Designer'],['Stage','Onsite → Panel'],['Contact','Dana Whitfield'],['Due','Fri Aug 21, EOD'],['Threads','#4412, #4390']] },
+  { id:'t2', st:'now', title:'Confirm Tuesday 10:00 with Northline Systems',
+    co:'Northline Systems', stage:'Interview 2 of 3', due:'Today', conf:0.91,
+    ev:['We have two slots open next week: ','Tuesday at 10:00 or Thursday at 15:30','. Whichever suits you.'],
+    src:'Owen Reyes · Northline Systems · Aug 15, 16:40',
+    lin:'Calendar hold placed on both slots. Neither is confirmed, so Eve is holding them.',
+    fields:[['Company','Northline Systems'],['Role','Staff Product Designer'],['Stage','Interview 2 of 3'],['Contact','Owen Reyes'],['Due','Today, before 18:00'],['Threads','#4501']] },
+  { id:'t3', st:'now', title:'Reply to Marguerite with a scope for the take-home',
+    co:'Atlas Foundry', stage:'Panel', due:'Tomorrow', conf:0.88,
+    ev:['No rush on the work itself. ','We would just like a rough scope and timeline back by Monday',', so we can plan the panel.'],
+    src:'Marguerite Vance · Atlas Foundry · Aug 13, 11:05',
+    lin:'3 threads merged. Two earlier duplicates suppressed after the brief was re-sent.',
+    fields:[['Company','Atlas Foundry'],['Role','Product Designer'],['Stage','Take-home'],['Contact','Marguerite Vance'],['Due','Mon Aug 24'],['Threads','#4288, #4301, #4356']] },
+  { id:'t4', st:'wait', title:'Halyard still has not confirmed the offer timeline',
+    co:'Halyard', stage:'Offer pending', due:'6 days', conf:0.79,
+    ev:['Thanks for your patience while we finish the levelling. ','We should have the final number to you early next week','.'],
+    src:'Priya Anand · Halyard · Aug 10, 08:22',
+    lin:'Waiting six days against a commitment they made. Eve has a nudge drafted.',
+    fields:[['Company','Halyard'],['Role','Design Lead'],['Stage','Offer pending'],['Contact','Priya Anand'],['Silent','6 days'],['Threads','#4102']] },
+  { id:'t5', st:'wait', title:'Atlas Foundry panel feedback',
+    co:'Atlas Foundry', stage:'Panel', due:'3 days', conf:0.72,
+    ev:['The panel wrapped up well. ','You should hear from us within the week','.'],
+    src:'Marguerite Vance · Atlas Foundry · Aug 12, 17:48',
+    lin:'Within their stated window. Eve will raise this again on Aug 19.',
+    fields:[['Company','Atlas Foundry'],['Role','Product Designer'],['Stage','Awaiting decision'],['Contact','Marguerite Vance'],['Silent','3 days'],['Threads','#4356']] },
+  { id:'t6', st:'later', title:'Renew the Figma seat before the trial lapses',
+    co:'Money', stage:'Renewal', due:'Aug 29', conf:0.97,
+    ev:['Your team trial ends on ','August 29','. Renew to keep your files editable.'],
+    src:'Figma Billing · Aug 12, 06:00',
+    lin:'Not job search. Filed under Money, surfaced here because it has a hard date.',
+    fields:[['Vendor','Figma'],['Amount','$15 / month'],['Cluster','Money'],['Due','Fri Aug 29'],['Threads','#4340']] },
+  { id:'t7', st:'later', title:'Return the signed NDA to Cove & Wick',
+    co:'Cove & Wick', stage:'Screen', due:'Sep 2', conf:0.85,
+    ev:['Attached is the standard NDA. ','No hurry, any time before our call on the 2nd','.'],
+    src:'Ines Barros · Cove & Wick · Aug 11, 14:20',
+    lin:'Attachment detected and stashed. Eve will attach it back to your reply.',
+    fields:[['Company','Cove & Wick'],['Role','Brand Designer'],['Stage','Screen'],['Contact','Ines Barros'],['Due','Tue Sep 2'],['Threads','#4210']] },
+  { id:'t8', st:'done', title:'Send the portfolio PDF to Cove & Wick',
+    co:'Cove & Wick', stage:'Screen', due:'Aug 11', conf:0.93,
+    ev:['Would you mind sending ','a PDF of the portfolio','before Monday?'],
+    src:'Ines Barros · Cove & Wick · Aug 08, 10:31',
+    lin:'Closed automatically when Eve saw your reply with an attachment.',
+    fields:[['Company','Cove & Wick'],['Closed','Aug 11, by reply'],['Threads','#4210']] },
+  { id:'t9', st:'done', title:'Reschedule the Meridian intro call',
+    co:'Meridian Freight', stage:'Applied', due:'Aug 09', conf:0.81,
+    ev:['Sorry to do this, but ','could we move Thursday to the following week','?'],
+    src:'Recruiting · Meridian Freight · Aug 06, 12:00',
+    lin:'Closed automatically when a new invite landed for the same thread.',
+    fields:[['Company','Meridian Freight'],['Closed','Aug 09, by calendar'],['Threads','#3990']] }
+];
+
+const PROSPECTS = [
+  { co:'Halyard', role:'Design Lead', at:5, stage:'Offer pending', age:'6 days quiet', hot:true,
+    signal:'Priya committed to a final number "early next week" on Aug 10. Nothing since.' },
+  { co:'Kestrel Labs', role:'Senior Product Designer', at:4, stage:'Onsite', age:'1 day', hot:false,
+    signal:'References requested. Panel provisionally held for the 26th.' },
+  { co:'Atlas Foundry', role:'Product Designer', at:4, stage:'Panel', age:'3 days', hot:false,
+    signal:'Panel complete, take-home scope outstanding on your side.' },
+  { co:'Northline Systems', role:'Staff Product Designer', at:3, stage:'Interview', age:'2 days', hot:false,
+    signal:'Two slots offered for next week. Awaiting your pick.' },
+  { co:'Cove & Wick', role:'Brand Designer', at:2, stage:'Screen', age:'4 days', hot:false,
+    signal:'Warm note about the portfolio. NDA sitting unsigned.' },
+  { co:'Meridian Freight', role:'Design Systems', at:1, stage:'Applied', age:'11 days quiet', hot:true,
+    signal:'Only an auto-acknowledgement. Going cold.' }
+];
+
+const PLACES = [
+  { co:'Ostler Lane, studio', role:'£1,325 · available now', at:4, stage:'Viewed', age:'2 days', hot:true,
+    signal:'You saw it Tuesday. They want references by Friday, same week as Kestrel.' },
+  { co:'Bramble Street, flat 4', role:'£1,390 · 1 bed', at:3, stage:'Viewing booked', age:'Saturday 11:00', hot:false,
+    signal:'Confirmed for Saturday. Thirty-four minutes door to door.' },
+  { co:'Verge Road, flat 2', role:'£1,450 · 1 bed', at:2, stage:'Enquired', age:'4 days quiet', hot:true,
+    signal:'Ilse says it is free from Sept 1. You have not replied in four days.' },
+  { co:'Halsey Court', role:'£1,600 · 2 bed', at:1, stage:'Enquired', age:'1 day', hot:false,
+    signal:'Agent auto-reply only. No person on the thread yet.' },
+  { co:'Pike Wharf', role:'£1,700 · 2 bed', at:1, stage:'Enquired', age:'9 days quiet', hot:false,
+    signal:'Over your ceiling anyway. Eve kept it because you replied once.' }
+];
+
+const TRACKERS = {
+  job: { id:'job', stages:['Applied','Screen','Interview','Onsite','Offer'], rows:PROSPECTS,
+    note:'Six companies, read out of 41 threads.\nNobody typed any of this in.' },
+  places: { id:'places', stages:['Enquired','Viewing','Viewed','Applied','Signed'], rows:PLACES,
+    note:'Five places, read out of the letting agents.\nStages were guessed from how the threads actually go.' }
+};
+
+const TRACKER_SUGGEST = { id:'places', name:'Places to Live', why:'Four letting agents and twelve threads since Aug 9, all following the same shape: enquire, view, apply. Eve can track them the way she tracks the job search.' };
+
+const CLUSTER_SUGGEST = [
+  { id:'travel', name:'Conference and travel', count:'9 threads · 3 senders', why:'Nine threads since Aug 2 about the same two dates in October. Flights, a ticket and a hotel hold, currently scattered.' },
+  { id:'coalfell', name:'Coalfell, freelance', count:'6 threads · 1 client', why:'Invoices and briefs from one client, sitting inside the job search where they keep being mistaken for applications.' }
+];
+
+const CLUSTERS = [
+  { id:'search', name:'The Search', n:41, note:'Applications, recruiters, scheduling' },
+  { id:'homes', name:'Places to Live', n:12, note:'Listings and viewings. Cluster created Aug 9.' },
+  { id:'money', name:'Money', n:8, note:'Invoices, renewals, the bank' },
+  { id:'rest', name:'Everything Else', n:214, note:'Nothing in here has asked you for anything' }
+];
+
+const THREADS = {
+  search: [
+    { from:'Dana Whitfield', when:'Aug 14', subject:'Panel scheduling and references', quote:'could you send over two references by end of day Friday', eve:'Wants two references by Friday. That is your only open item here.', task:true },
+    { from:'Owen Reyes', when:'Aug 15', subject:'Next week?', quote:'We have two slots open next week: Tuesday at 10:00 or Thursday at 15:30', eve:'Two slots offered, neither confirmed. Holds are on your calendar.', task:true },
+    { from:'Priya Anand', when:'Aug 10', subject:'Re: offer timeline', quote:'We should have the final number to you early next week', eve:'Promised a number "early next week". That was six days ago.', task:true },
+    { from:'Marguerite Vance', when:'Aug 13', subject:'Take-home brief', quote:'We would just like a rough scope and timeline back by Monday', eve:'Rough scope wanted by Monday. Brief attached and stashed.', task:true },
+    { from:'Meridian Recruiting', when:'Aug 05', subject:'We received your application', quote:'We will be in touch if your profile matches an open role', eve:'Automated. No action, no person behind it yet.', task:false },
+    { from:'Ines Barros', when:'Aug 11', subject:'Loved the portfolio', quote:'No need to reply, just wanted to say the Coalfell work landed well', eve:'Positive, no ask. The NDA in the same thread is still unsigned.', task:true }
+  ],
+  homes: [
+    { from:'Bramble Street Lettings', when:'Aug 15', subject:'Viewing confirmed, Saturday 11:00', quote:'We have you down for Saturday at 11:00, the code for the door is on arrival', eve:'Address parsed and added. Travel time is 34 minutes.', task:true },
+    { from:'Ilse Kramer', when:'Aug 12', subject:'Verge Road flat, still available', quote:'It is still free from the 1st if you are interested, let me know either way', eve:'1,450 a month, free from Sept 1. You have not replied in four days.', task:true },
+    { from:'Listings Alert', when:'Aug 16', subject:'6 new places near you', quote:'Six new listings match Flat, 1 bed, under 1500, within 40 minutes', eve:'Two match your saved filters. The other four are over budget.', task:false }
+  ],
+  money: [
+    { from:'Figma Billing', when:'Aug 12', subject:'Your trial ends August 29', quote:'Your team trial ends on August 29. Renew to keep your files editable', eve:'Hard date. Fifteen a month if you keep it.', task:true },
+    { from:'Bank', when:'Aug 14', subject:'Statement ready', quote:'Your August statement is ready to view', eve:'Nothing unusual. Filed.', task:false },
+    { from:'Coalfell Studio', when:'Aug 09', subject:'Invoice 0114 paid', quote:'Payment sent this morning, thanks for the quick turnaround', eve:'Received. Closes the last freelance thread.', task:false }
+  ],
+  travel: [
+    { from:'Foundry Conf', when:'Aug 02', subject:'Your ticket, October 14–16', quote:'Your pass for October 14 to 16 is confirmed and non-transferable', eve:'Confirmed. Dates now clash with nothing in your calendar.', task:false },
+    { from:'Airline', when:'Aug 06', subject:'Hold expires in 48 hours', quote:'This fare is held for 48 hours and will be released after that', eve:'A held fare, unpaid. This is the only real deadline in the cluster.', task:true },
+    { from:'Hotel Marlowe', when:'Aug 08', subject:'Reservation options near the venue', quote:'Three rooms available within walking distance, none held yet', eve:'Three options, none booked. Walking distance is the middle one.', task:false }
+  ],
+  coalfell: [
+    { from:'Coalfell Studio', when:'Aug 09', subject:'Invoice 0114 paid', quote:'Payment sent this morning, thanks for the quick turnaround', eve:'Received. Nothing outstanding.', task:false },
+    { from:'Rae Odell', when:'Aug 13', subject:'One more sprint in September?', quote:'Any chance you could take one more sprint in September?', eve:'A real question with no date attached. Worth an answer before you sign anywhere.', task:true },
+    { from:'Coalfell Studio', when:'Jul 28', subject:'Brief, phase two', quote:'Attached is phase two for reference, nothing needed from you yet', eve:'Reference material. Filed, not urgent.', task:false }
+  ],
+  rest: [
+    { from:'Newsletters', when:'Ongoing', subject:'184 threads', eve:'None of these have ever received a reply from you.', task:false },
+    { from:'Receipts', when:'Ongoing', subject:'22 threads', eve:'Archived on arrival. Searchable, not shown.', task:false },
+    { from:'Old projects', when:'2024', subject:'8 threads', eve:'Dormant more than a year.', task:false }
+  ]
+};
+
+const PROMISES = [
+  { id:'p4', to:'Owen Reyes · Northline Systems', said:'Aug 15', st:'due', due:'Today',
+    quote:'I will confirm a slot today.',
+    ctx:'The same commitment as the Northline task. Eve keeps it as one thing, not two.' },
+  { id:'p1', to:'Dana Whitfield · Kestrel Labs', said:'Aug 14', st:'due', due:'Fri Aug 21',
+    quote:'I will get those over to you by Friday.',
+    ctx:'Two references. This is where the Friday deadline actually came from, you set it yourself.' },
+  { id:'p6', to:'Tobin Wray', said:'Aug 05', st:'due', due:'Before Friday',
+    quote:'I will let you know before I put your name down.',
+    ctx:'This one gates another. The Kestrel reference goes out Friday, and Tobin has not been told.' },
+  { id:'p3', to:'Ilse Kramer · Verge Road', said:'Aug 12', st:'late', due:'Sun Aug 17',
+    quote:'I will confirm by the weekend whether we want a second viewing.',
+    ctx:'Nothing sent since. The flat is still listed, so the door has not closed.' },
+  { id:'p2', to:'Rae Odell · Coalfell', said:'Aug 13', st:'late', due:'Mon Aug 18',
+    quote:'Let me come back to you on September early next week.',
+    ctx:'You said early next week on the 13th. That is the same phrase you are currently annoyed at Halyard for using.' },
+  { id:'p5', to:'Marguerite Vance · Atlas Foundry', said:'Aug 09', st:'broken', due:'Was Aug 15',
+    quote:'I will send the scope through this week.',
+    ctx:'The week ended and nothing went out. Eve suggests saying so rather than quietly delivering late.' },
+  { id:'p7', to:'Ines Barros · Cove & Wick', said:'Aug 08', st:'kept', due:'Aug 08',
+    quote:'Portfolio PDF coming your way today.',
+    ctx:'Kept. Sent three hours later, closed automatically.' }
+];
+
+const BRIEF = [
+  ['Moved','Owen Reyes offered two slots for next week. Neither is confirmed, and you said you would answer today.','tasks'],
+  ['Quiet','Halyard, six days. Priya\u2019s own window closed on Friday.','pipeline'],
+  ['Collision','Friday is carrying two reference requests, Kestrel and Ostler Lane. Same day, same favour, different people.','tasks'],
+  ['Broken','You told Marguerite the scope would go out this week. It did not.','promises'],
+  ['New','Two listings matched your filters overnight. Neither is over budget.','mail'],
+  ['Clear','Nothing new in Money, and nothing in Everything Else has asked you for anything.','mail']
+];
+
+const LEARNED = [
+  'Aug 12 · "let me know if" stopped reading as an ask. You corrected it three times.',
+  'Aug 09 · Newsletters from 41 senders never become tasks, whatever they say.',
+  'Aug 06 · Calendar invites are not tasks unless there is a question in the body.',
+  'Jul 30 · "no rush" now pushes a due date out a week instead of dropping it.',
+  'Jul 24 · Threads where you are on cc and never named are read, not surfaced.'
+];
+
+const COLLISION = {
+  day:'Friday 21 August',
+  rows:[
+    ['Kestrel Labs','Two references, by end of day','Their deadline'],
+    ['Ostler Lane','References for the tenancy, by Friday','Their deadline']
+  ],
+  note:'Both want the same favour from the same two people. Tobin and Alia would each get two requests in one afternoon.'
+};
+
+const SCRIPT = {
+  'Draft a nudge': { text:'Here is a short one. It leans on her own words, so it reads as a check-in rather than chasing.',
+    draft:'Hi Priya,\n\nNo pressure at all, just circling back on the levelling you mentioned on the 10th. Happy to wait if it needs another week, it would only help me to know roughly when.\n\nBest,\nJ.',
+    chips:['Send it','Make it shorter','Not yet'] },
+  'Make it shorter': { text:'Tighter. Same intent, one breath.',
+    draft:'Hi Priya, circling back on the levelling from the 10th. Any sense of timing? Happy to wait.\n\nJ.',
+    chips:['Send it','Put it back','Not yet'] },
+  'Put it back': { text:'Restored the longer version. It is warmer, and Priya writes long.', chips:['Send it','Not yet'] },
+  'Send it': { text:'Sent. Halyard moves back to Waiting and I will raise it again on the 20th if she has not replied.', chips:['Show me the pipeline','What else is quiet?'] },
+  'Show me the thread': { text:'Three messages since Aug 4. The only commitment anywhere in it is "early next week". Everything else is scheduling.', chips:['Draft a nudge','Leave it'] },
+  'Leave it': { text:'Fine. I will re-raise it Thursday if nothing lands, and stay quiet until then.', chips:['Snooze it a week','Actually, draft the nudge'] },
+  'Actually, draft the nudge': { text:'Here is a short one. It leans on her own words, so it reads as a check-in rather than chasing.',
+    draft:'Hi Priya,\n\nNo pressure at all, just circling back on the levelling you mentioned on the 10th. Happy to wait if it needs another week, it would only help me to know roughly when.\n\nBest,\nJ.',
+    chips:['Send it','Make it shorter','Not yet'] },
+  'Snooze it a week': { text:'Snoozed to Aug 23. It will not appear in Tasks until then.', chips:['What else is quiet?'] },
+  'Not yet': { text:'Held. The draft stays here, nothing left your account.', chips:['Send it','What else is quiet?'] },
+  'What else is quiet?': { text:'Meridian Freight, eleven days on an auto-acknowledgement. That one I would let go. Atlas is at three days and still inside the window they gave you.', chips:['Draft a nudge','Show me the pipeline'] },
+  'Draft a reply': { text:'A short acknowledgement, so it stops sitting on your side of the table.',
+    draft:'Thanks, that all works. Sending the rest across today.\n\nJ.', chips:['Send it','Make it shorter','Not yet'] },
+  'Ask Ostler Lane to move the references to Monday': {
+    text:'Drafted. It is the smaller of the two asks and they have no stated deadline, only a Friday habit.',
+    draft:'Hi,\n\nCould I get the references to you Monday rather than Friday? Same two people, I would rather not ask them twice in one afternoon.\n\nThanks,\nJ.',
+    chips:['Send it','Not yet'] },
+  'Show me the pipeline': { text:'Opened it. Halyard and Meridian are the two marked warm, for opposite reasons.', chips:['What else is quiet?'], go:'pipeline' }
+};
+
+const NOW = [
+  { id:'t1', title:'Send Kestrel the two references they asked for',
+    to:'Dana Whitfield · Kestrel Labs', subj:'Re: Panel scheduling and references',
+    ev:'could you send over two references by end of day Friday', src:'Aug 14, 09:12 · thread #4412',
+    draft: s => ['Hi Dana,\n\nGreat to meet you Thursday. My two references are ', s.c1 || '', '.\n\n' +
+      (s.c2 === 'soften' ? 'I am checking with them today and will confirm before Friday.' : 'Both are happy to be contacted directly this week, so Friday is no problem.') +
+      '\n\nBest,\nJ.'],
+    claims: [
+      { k:'c1', text:'Names two referees', ask:'Who should Dana contact?',
+        note:'Eve found both in your sent mail from March, but will not put a name in an email you did not choose.',
+        options:[
+          { l:'Tobin Wray and Alia Ferrand', v:'Tobin Wray (Coalfell) and Alia Ferrand (Northgate)' },
+          { l:'Only Tobin Wray', v:'Tobin Wray (Coalfell)' },
+          { l:'Neither, I will add them', v:'[to add]' } ] },
+      { k:'c2', text:'Both have agreed to be contacted', ask:'Have you actually asked them?',
+        note:'Nothing in your mail shows you did. Eve will not claim it on your behalf.',
+        options:[ { l:'Yes, both agreed', v:'yes' }, { l:'Not yet, soften the line', v:'soften' } ] },
+      { k:'v1', ok:true, text:'Friday end of day is the deadline they set', src:'Verified · thread #4412' } ] },
+
+  { id:'t2', title:'Confirm Tuesday 10:00 with Northline Systems',
+    to:'Owen Reyes · Northline Systems', subj:'Re: Next week?',
+    ev:'Tuesday at 10:00 or Thursday at 15:30', src:'Aug 15, 16:40 · thread #4501',
+    draft: () => ['Hi Owen,\n\nTuesday at 10:00 works well. I have held it on my side.\n\nSee you then,\nJ.', '', ''],
+    claims: [
+      { k:'v2', ok:true, text:'Tuesday 10:00 is free in your calendar', src:'Verified · calendar, Aug 19' },
+      { k:'v3', ok:true, text:'No clash with the Kestrel panel on the 26th', src:'Verified · calendar' },
+      { k:'v4', ok:true, text:'Owen is in your timezone, so 10:00 means the same thing', src:'Verified · message headers' } ] },
+
+  { id:'t4', title:'Nudge Halyard about the offer timeline',
+    to:'Priya Anand · Halyard', subj:'Re: offer timeline',
+    ev:'We should have the final number to you early next week', src:'Aug 10, 08:22 · thread #4102',
+    draft: s => [(s.c3 === 'firm'
+      ? 'Hi Priya,\n\nFollowing up on the levelling you mentioned on the 10th. I have another process moving, so a rough date this week would help me a lot.\n\nBest,\nJ.'
+      : s.c3 === 'soft'
+      ? 'Hi Priya,\n\nHope the levelling is going smoothly. No rush at all, just let me know when there is news.\n\nBest,\nJ.'
+      : 'Hi Priya,\n\nNo pressure at all, just circling back on the levelling you mentioned on the 10th. Happy to wait if it needs another week, it would only help me to know roughly when.\n\nBest,\nJ.'), '', ''],
+    claims: [
+      { k:'v5', ok:true, text:'She did say "early next week" on Aug 10', src:'Verified · thread #4102' },
+      { k:'v6', ok:true, text:'You have not already chased her', src:'Verified · nothing sent since Aug 8' },
+      { k:'c3', text:'Read it. Does this sound like you?', ask:'Eve cannot judge tone, and will not pretend to.',
+        note:'This is the one gate that never clears on its own. Someone has to have read the words before they leave.',
+        options:[ { l:'Yes, send as written', v:'yes' }, { l:'Too soft', v:'firm' }, { l:'Too pushy', v:'soft' } ] } ] }
+];
+
+class Component extends DCLogic {
+  state = {
+    view:'tasks', filter:'all', open:null, done:['t8','t9'], cluster:'search',
+    input:'', toast:null, connected:true,
+    nowIdx:0, slots:{}, openCheck:null, ledger:[],
+    pull:'live', cadence:'Hourly', tools:{}, revoked:['Calendar agent'], copied:false,
+    trackerId:'job', trackersOn:['job'], trackerNames:{ job:'Job Search', places:'Places to Live' },
+    renaming:false, renameVal:'', acceptedClusters:[], dismissed:[],
+    clusterNames:{}, deletedClusters:[], mutedClusters:[], renamingCluster:false, clusterRenameVal:'',
+    showBin:false, notTasks:[], prospectState:{}, openProspect:null,
+    query:'', briefRead:false, promFilter:'all', keptPromises:['p7'], collisionGone:false,
+    openThread:null, snoozing:null,
+    rules:{ tasks:'Act', dedupe:'Act', pipeline:'Act', clusters:'Suggest', holds:'Suggest', nudge:'Suggest' },
+    msgs:[{ who:'Eve', text:'Halyard has been quiet for six days. Priya said "early next week" on the 10th, and that window closed on Friday.' }],
+    chips:['Draft a nudge','Show me the thread','Leave it']
+  };
+
+  accent() { return this.props.accent || RUST; }
+
+  commitCluster(id) {
+    const v = (this.state.clusterRenameVal || '').trim();
+    if (!v) { this.setState({ renamingCluster:false }); return; }
+    this.setState({
+      renamingCluster:false,
+      clusterNames: Object.assign({}, this.state.clusterNames, { [id]:v }),
+      toast:{ text:'Renamed cluster to ' + v, id:'rn' }
+    });
+  }
+
+  commitName(id) {
+    const v = (this.state.renameVal || '').trim();
+    if (!v) { this.setState({ renaming:false }); return; }
+    this.setState({
+      renaming:false,
+      trackerNames: Object.assign({}, this.state.trackerNames, { [id]:v }),
+      toast:{ text:'Renamed to ' + v, id:'rn' }
+    });
+  }
+
+  say(label) {
+    const s = SCRIPT[label];
+    const msgs = this.state.msgs.concat([{ who:'You', text:label }]);
+    if (s) {
+      msgs.push({ who:'Eve', text:s.text, draft:s.draft });
+      this.setState({ msgs, chips:s.chips || [], view: s.go || this.state.view });
+    } else {
+      msgs.push({ who:'Eve', text:'I only have your mail to go on, and nothing in it speaks to that yet. I will flag it the moment something does.', });
+      this.setState({ msgs, chips:['What else is quiet?','Draft a nudge'] });
+    }
+    setTimeout(() => {
+      const el = document.querySelector('[data-eve-scroll]');
+      if (el) el.scrollTop = el.scrollHeight;
+    }, 30);
+  }
+
+  toggleDone(id, title) {
+    const has = this.state.done.indexOf(id) >= 0;
+    this.setState({
+      done: has ? this.state.done.filter(d => d !== id) : this.state.done.concat([id]),
+      open: has ? this.state.open : null,
+      toast: has ? null : { text:'Marked done: ' + title, id }
+    });
+    if (!has) setTimeout(() => { if (this.state.toast && this.state.toast.id === id) this.setState({ toast:null }); }, 4200);
+  }
+
+  renderVals() {
+    const A = this.accent();
+    const dens = this.props.density || 'Balanced';
+    const pad = dens === 'Airy' ? 26 : dens === 'Dense' ? 12 : 19;
+    const peek = !!this.props.showEvidenceInline;
+    const showConf = this.props.showConfidence !== false;
+    const done = this.state.done;
+    const v = this.state.view;
+
+    const stOf = t => done.indexOf(t.id) >= 0 ? 'done' : (t.st === 'done' ? 'now' : t.st);
+    const counts = { all:0, now:0, wait:0, later:0, done:0 };
+    TASKS.forEach(t => { counts[stOf(t)]++; if (stOf(t) !== 'done') counts.all++; });
+
+    const trackerTotal = this.state.trackersOn.reduce((n, id) => n + TRACKERS[id].rows.length, 0);
+    const promOpen = PROMISES.filter(p => p.st !== 'kept' && this.state.keptPromises.indexOf(p.id) < 0).length;
+    const navDef = [['brief','Brief',this.state.briefRead ? 0 : BRIEF.length],['now','Now',Math.max(0, NOW.length - this.state.nowIdx)],['tasks','Tasks',counts.all],['promises','Promises',promOpen],['pipeline','Trackers',trackerTotal],['mail','Mail',275]];
+    const nav = navDef.map(([id,label,count]) => ({
+      label, count, go: () => this.setState({ view:id }),
+      style: 'display:flex; align-items:center; justify-content:space-between; padding:9px 24px; cursor:pointer; font-size:16px; letter-spacing:-0.02em; border-left:3px solid ' +
+        (v === id ? A : 'transparent') + '; color:' + (v === id ? '#16150f' : '#8a8779') + '; font-weight:' + (v === id ? 600 : 400),
+      countStyle: 'font-family:' + MONO + '; font-size:10px; color:' + (v === id ? '#16150f' : '#a8a496')
+    }));
+
+    const filtDef = [['all','All open',counts.all],['now','Needs you',counts.now],['wait','Waiting',counts.wait],['later','Later',counts.later],['done','Done',counts.done]];
+    if (this.state.notTasks.length) filtDef.push(['wrong','Not tasks',this.state.notTasks.length]);
+    const filters = filtDef.map(([id,label,count]) => ({
+      label, count, go: () => this.setState({ filter:id, open:null }),
+      style: 'font-family:' + MONO + '; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; cursor:pointer; padding-bottom:12px; margin-bottom:-13px; border-bottom:2px solid ' +
+        (this.state.filter === id ? A : 'transparent') + '; color:' + (this.state.filter === id ? '#16150f' : '#8a8779'),
+      numStyle: 'color:#a8a496; margin-left:4px'
+    }));
+
+    const glyphFor = st => st === 'now' ? 'width:9px;height:9px;margin-top:9px;background:' + A
+      : st === 'wait' ? 'width:9px;height:9px;margin-top:9px;background:' + MOSS
+      : st === 'done' ? 'width:9px;height:9px;margin-top:9px;background:#c9c5b6'
+      : 'width:9px;height:9px;margin-top:9px;border:1px solid #a8a496';
+
+    const notT = this.state.notTasks;
+    const f = this.state.filter;
+    const tasks = TASKS.filter(t => {
+      if (f === 'wrong') return notT.indexOf(t.id) >= 0;
+      if (notT.indexOf(t.id) >= 0) return false;
+      const s = stOf(t);
+      return f === 'all' ? s !== 'done' : s === f;
+    }).map(t => {
+      const s = stOf(t);
+      const isOpen = this.state.open === t.id;
+      const isDone = s === 'done';
+      return {
+        title: t.title, ev1: t.ev[0], ev2: t.ev[1], ev3: t.ev[2], src: t.src, lin: t.lin,
+        fields: t.fields.map(x => ({ k:x[0], v:x[1] })),
+        open: isOpen, showPeek: peek && !isOpen,
+        meta: t.co + ' · ' + t.stage + (showConf ? ' · ' + Math.round(t.conf * 100) + '% confidence' : ''),
+        dueLabel: isDone ? 'Closed ' + t.due : t.due,
+        rowStyle: 'display:grid; grid-template-columns:14px 1fr auto; gap:18px; padding:' + pad + 'px 4px; cursor:pointer; align-items:start; background:' + (isOpen ? '#fbf9f4' : 'transparent'),
+        titleStyle: 'font-size:21px; font-weight:500; letter-spacing:-0.022em; line-height:1.25; text-wrap:pretty; color:' + (isDone ? '#a8a496' : '#16150f') + (isDone ? '; text-decoration:line-through' : ''),
+        glyph: glyphFor(s),
+        hiStyle: 'background:color-mix(in oklab, ' + A + ' 26%, transparent); padding:1px 2px',
+        linDot: 'width:5px; height:5px; margin-top:7px; flex:0 0 5px; background:' + A,
+        dueStyle: 'font-family:' + MONO + '; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; padding-top:9px; white-space:nowrap; color:' + (s === 'now' ? A : s === 'done' ? '#c9c5b6' : '#8a8779'),
+        doneLabel: isDone ? 'Reopen' : 'Mark done',
+        toggle: () => this.setState({ open: isOpen ? null : t.id }),
+        done: (e) => { e.stopPropagation(); this.toggleDone(t.id, t.title); },
+        snoozing: this.state.snoozing === t.id,
+        snooze: (e) => { e.stopPropagation(); this.setState({ snoozing: this.state.snoozing === t.id ? null : t.id }); },
+        snoozeOpts: ['Tomorrow morning','Monday','A week','When they reply'].map(label => ({
+          label, go: (e) => { e.stopPropagation(); this.setState({ snoozing:null, open:null, toast:{ text:'Snoozed until ' + label.toLowerCase() + ': ' + t.title, id:'sn' } }); }
+        })),
+        notTaskLabel: notT.indexOf(t.id) >= 0 ? 'Put it back' : 'Not a task',
+        notTaskStyle: 'font-family:' + MONO + '; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; padding:9px 13px; cursor:pointer; ' +
+          (notT.indexOf(t.id) >= 0 ? 'border:1px solid ' + A + '; color:' + A : 'border:1px solid #ddd9cd; color:#a8a496'),
+        notTask: (e) => {
+          e.stopPropagation();
+          const has = notT.indexOf(t.id) >= 0;
+          this.setState({
+            notTasks: has ? notT.filter(x => x !== t.id) : notT.concat([t.id]),
+            open:null,
+            toast: has ? null : { text:'Not a task: ' + t.title, id:'nt', tid:t.id }
+          });
+        },
+        ask: (e) => {
+          e.stopPropagation();
+          const msgs = this.state.msgs.concat([
+            { who:'You', text:t.title },
+            { who:'Eve', text:'That one came out of ' + t.src.split(' · ')[0] + '\u2019s note. The line I acted on was \u201c' + t.ev[1] + '\u201d. ' + t.lin }
+          ]);
+          this.setState({ msgs, chips:['Draft a reply','Not yet','What else is quiet?'] });
+          setTimeout(() => { const el = document.querySelector('[data-eve-scroll]'); if (el) el.scrollTop = el.scrollHeight; }, 30);
+        }
+      };
+    });
+
+    const tkOn = this.state.trackersOn;
+    const tkNone = tkOn.length === 0;
+    const tk = tkNone ? { id:'job', stages:[], rows:[], note:'Nothing is being tracked. Eve keeps reading, and will offer\nsomething again when a pattern is worth a tracker.' }
+      : (TRACKERS[this.state.trackerId] || TRACKERS[tkOn[0]]);
+    const trackerTabs = tkOn.map(id => {
+      const on = this.state.trackerId === id;
+      return {
+        label: this.state.trackerNames[id] + '  ' + TRACKERS[id].rows.length,
+        go: () => this.setState({ trackerId:id, renaming:false }),
+        style: 'font-family:' + MONO + '; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; padding:9px 13px; cursor:pointer; white-space:pre; ' +
+          (on ? 'background:#16150f; color:#f2efe7' : 'border:1px solid #ddd9cd; color:#8a8779')
+      };
+    });
+
+    const pst = this.state.prospectState;
+    const prospects = tk.rows.filter(p => !(pst[p.co] || {}).gone).map(p => {
+      const ps = pst[p.co] || {};
+      const at = ps.at || p.at;
+      const closed = !!ps.closed;
+      const isOpen = this.state.openProspect === p.co;
+      const next = tk.stages[at] || null;
+      return {
+        co: p.co, role: p.role, signal: p.signal, open: isOpen,
+        stage: closed ? 'Closed' : (tk.stages[at - 1] || p.stage),
+        age: closed ? 'Closed by you' : p.age,
+        rowStyle: 'display:grid; grid-template-columns:1fr 168px 128px; gap:14px 32px; align-items:center; padding:20px 4px; border-bottom:1px solid #ddd9cd; cursor:pointer; opacity:' +
+          (closed ? '0.45' : '1') + '; background:' + (isOpen ? '#fbf9f4' : 'transparent'),
+        ageStyle: 'font-family:' + MONO + '; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:' + (p.hot && !closed ? A : '#5c5a50'),
+        dots: [1,2,3,4,5].map(i => ({
+          line: 'height:1px; flex:1; background:' + (i <= at && !closed ? '#16150f' : '#ddd9cd') +
+            '; margin-right:2px; border-top:' + (i === at && !closed ? '3px solid ' + A : '1px solid transparent')
+        })),
+        toggle: () => this.setState({ openProspect: isOpen ? null : p.co }),
+        advanceLabel: next ? 'Advance to ' + next : 'At the last stage',
+        advanceStyle: 'font-family:' + MONO + '; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; padding:8px 12px; ' +
+          (next && !closed ? 'background:#16150f; color:#f2efe7; cursor:pointer' : 'border:1px dashed #ddd9cd; color:#c9c5b6; cursor:not-allowed'),
+        advance: (e) => { e.stopPropagation(); if (next && !closed) this.setState({ prospectState: Object.assign({}, pst, { [p.co]: Object.assign({}, ps, { at: at + 1 }) }) }); },
+        closeLabel: closed ? 'Reopen' : 'Closed, no',
+        close: (e) => { e.stopPropagation(); this.setState({ prospectState: Object.assign({}, pst, { [p.co]: Object.assign({}, ps, { closed: !closed }) }), openProspect:null }); },
+        drop: (e) => {
+          e.stopPropagation();
+          this.setState({
+            prospectState: Object.assign({}, pst, { [p.co]: Object.assign({}, ps, { gone:true }) }),
+            openProspect:null, toast:{ text:'Removed from tracker: ' + p.co, id:'pr', co:p.co }
+          });
+        }
+      };
+    });
+
+    const cNames = this.state.clusterNames;
+    const allClusters = CLUSTERS.concat(
+      CLUSTER_SUGGEST.filter(s => this.state.acceptedClusters.indexOf(s.id) >= 0)
+        .map(s => ({ id:s.id, name:s.name, n: parseInt(s.count, 10), note:'Created by you just now, from a pattern Eve found.' }))
+    ).filter(c => this.state.deletedClusters.indexOf(c.id) < 0)
+     .map(c => Object.assign({}, c, { name: cNames[c.id] || c.name }));
+    const binOpen = this.state.showBin;
+    const suggestions = CLUSTER_SUGGEST
+      .filter(s => this.state.acceptedClusters.indexOf(s.id) < 0 && (binOpen || this.state.dismissed.indexOf(s.id) < 0))
+      .map(s => ({
+        name: s.name, count: s.count, why: s.why,
+        dot: 'width:5px; height:5px; margin-top:8px; background:' + A,
+        accept: () => this.setState({ acceptedClusters: this.state.acceptedClusters.concat([s.id]), cluster:s.id,
+          toast:{ text:'Cluster created: ' + s.name, id:'cl' } }),
+        dismiss: () => this.setState({ dismissed: this.state.dismissed.concat([s.id]) })
+      }));
+
+    const curCluster = allClusters.filter(c => c.id === this.state.cluster)[0] || allClusters[0] || { id:'search', name:'—' };
+    const muted = this.state.mutedClusters.indexOf(curCluster.id) >= 0;
+    const clusters = allClusters.map(c => {
+      const on = curCluster.id === c.id;
+      const mu = this.state.mutedClusters.indexOf(c.id) >= 0;
+      return {
+        name: c.name, n: mu ? 'muted' : c.n, note: c.note, go: () => this.setState({ cluster:c.id }),
+        style: 'padding:20px 18px 22px; cursor:pointer; opacity:' + (mu && !on ? '0.5' : '1') +
+          '; background:' + (on ? '#16150f' : '#f7f5ef') + '; color:' + (on ? '#f2efe7' : '#16150f'),
+        noteStyle: 'font-family:' + MONO + '; font-size:9.5px; line-height:1.7; letter-spacing:0.04em; margin-top:12px; color:' + (on ? 'rgba(242,239,231,0.62)' : '#a8a496')
+      };
+    });
+
+    const threads = (THREADS[curCluster.id] || []).map(m => {
+      const isOpen = this.state.openThread === m.subject;
+      return {
+        from: m.from, when: m.when, subject: m.subject, eve: m.eve, open: isOpen,
+        rowStyle: 'display:grid; grid-template-columns:170px 1fr auto; gap:28px; padding:18px 4px; border-bottom:1px solid #ddd9cd; align-items:start; cursor:pointer; background:' +
+          (isOpen ? '#fbf9f4' : 'transparent'),
+        dot: 'width:5px; height:5px; margin-top:6px; flex:0 0 5px; background:' + (m.task ? A : '#ddd9cd'),
+        pill: m.task ? 'Task' : 'Filed',
+        pillStyle: 'font-family:' + MONO + '; font-size:9px; letter-spacing:0.14em; text-transform:uppercase; padding:5px 8px; white-space:nowrap; ' +
+          (m.task ? 'border:1px solid #16150f; color:#16150f' : 'color:#c9c5b6'),
+        readerHead: m.task ? 'The sentence Eve acted on' : 'What Eve read, and let go',
+        quote: m.quote || m.eve,
+        outcome: m.task
+          ? 'This produced a task. Nothing else in the thread was treated as an ask, and the rest is stored but not surfaced.'
+          : 'Read, filed, no task. It stays searchable and will never appear in your list unless the thread changes.',
+        toggle: () => this.setState({ openThread: isOpen ? null : m.subject }),
+        openGmail: (e) => { e.stopPropagation(); this.setState({ toast:{ text:'Opening in Gmail: ' + m.subject, id:'gm' } }); },
+        mute: (e) => { e.stopPropagation(); this.setState({ toast:{ text:'Eve will stop reading: ' + m.subject, id:'gm' }, openThread:null }); }
+      };
+    });
+
+    const eveMsgs = this.state.msgs.map(m => ({
+      who: m.who === 'Eve' ? 'Eve' : 'You', text: m.text, draft: m.draft, hasDraft: !!m.draft,
+      wrap: m.who === 'Eve' ? '' : 'padding-left:34px',
+      label: 'font-family:' + MONO + '; font-size:9px; letter-spacing:0.2em; text-transform:uppercase; margin-bottom:8px; color:' + (m.who === 'Eve' ? 'rgba(242,239,231,0.45)' : 'rgba(242,239,231,0.3)'),
+      body: 'font-size:14.5px; line-height:1.6; letter-spacing:-0.01em; text-wrap:pretty; color:' + (m.who === 'Eve' ? '#f2efe7' : 'rgba(242,239,231,0.62)')
+    }));
+
+    const idx = this.state.nowIdx;
+    const cur = NOW[idx];
+    const slots = this.state.slots;
+    const openC = this.state.openCheck;
+    let checks = [], gateLeft = 0, nowDraftA = '', nowSlot = '', nowDraftB = '';
+    if (cur) {
+      const parts = cur.draft(slots);
+      nowDraftA = parts[0]; nowSlot = parts[1] || (parts.length > 1 && cur.claims.some(c => c.k === 'c1' && !slots.c1) ? '————————————' : ''); nowDraftB = parts[2] || '';
+      gateLeft = cur.claims.filter(c => !c.ok && !slots[c.k]).length;
+      checks = cur.claims.map(c => {
+        const resolved = !!slots[c.k];
+        const state = c.ok ? 'ok' : resolved ? 'done' : 'need';
+        const expanded = !c.ok && openC === c.k;
+        return {
+          text: c.text, ask: c.ask, note: c.note, expand: expanded,
+          rowStyle: 'display:grid; grid-template-columns:14px 1fr auto; gap:16px; align-items:baseline; cursor:' + (c.ok ? 'default' : 'pointer'),
+          mark: state === 'ok' ? 'width:9px;height:9px;background:' + MOSS + ';transform:translateY(1px)'
+            : state === 'done' ? 'width:9px;height:9px;background:#16150f;transform:translateY(1px)'
+            : 'width:9px;height:9px;border:1px solid ' + A + ';transform:translateY(1px)',
+          tag: c.ok ? c.src : resolved ? 'Answered by you' : 'Needs you',
+          tagStyle: 'font-family:' + MONO + '; font-size:9px; letter-spacing:0.13em; text-transform:uppercase; white-space:nowrap; color:' +
+            (state === 'need' ? A : '#a8a496'),
+          go: () => { if (!c.ok) this.setState({ openCheck: expanded ? null : c.k }); },
+          options: (c.options || []).map(o => ({
+            label: o.l,
+            style: 'font-family:' + MONO + '; font-size:9.5px; letter-spacing:0.11em; text-transform:uppercase; padding:9px 12px; cursor:pointer; border:1px solid ' +
+              (slots[c.k] === o.v ? '#16150f' : '#c9c5b6') + '; background:' + (slots[c.k] === o.v ? '#16150f' : 'transparent') +
+              '; color:' + (slots[c.k] === o.v ? '#f2efe7' : '#16150f'),
+            go: () => this.setState({ slots: Object.assign({}, slots, { [c.k]:o.v }), openCheck:null })
+          }))
+        };
+      });
+    }
+
+    const TOOLDEF = [
+      ['list_tasks','Every open task with its status, stage and due date.','Read',true],
+      ['get_evidence','The exact sentence a task came from, plus thread id and sender.','Read',true],
+      ['get_stash','Company, role, contact, dates, thread ids. The dedupe key lives here.','Read',true],
+      ['search_threads','Full-text over the ninety days Eve has read.','Read',true],
+      ['draft_reply','Write a draft into Now. It queues, it does not send.','Write draft',true],
+      ['answer_check','Resolve an evidence check, but only with a citable source.','Gated',true],
+      ['create_task','Add a task by hand. Deduped against everything Eve already found.','Write',false],
+      ['update_pipeline','Move a prospect between stages.','Write',false]
+    ];
+    const tools = TOOLDEF.map(([name, note, scope, def]) => {
+      const on = this.state.tools[name] === undefined ? def : this.state.tools[name];
+      return {
+        name, note, scope,
+        scopeStyle: 'font-family:' + MONO + '; font-size:9px; letter-spacing:0.13em; text-transform:uppercase; padding:5px 8px; text-align:center; white-space:nowrap; ' +
+          (scope === 'Read' ? 'color:#8a8779; border:1px solid #ddd9cd'
+            : scope === 'Gated' ? 'color:' + A + '; border:1px solid ' + A
+            : 'color:#16150f; border:1px solid #16150f'),
+        switchLabel: on ? 'Enabled' : 'Off',
+        switchStyle: 'font-family:' + MONO + '; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; padding:8px 10px; text-align:center; cursor:pointer; ' +
+          (on ? 'background:#16150f; color:#f2efe7' : 'border:1px solid #ddd9cd; color:#a8a496'),
+        go: () => this.setState({ tools: Object.assign({}, this.state.tools, { [name]: !on }) })
+      };
+    });
+
+    const AGENTDEF = [
+      ['Claude Desktop','Pulled evidence for four tasks this morning. Drafted the Kestrel reply you have open in Now.','214 calls · 7 days','live'],
+      ['Research runner','Reads the pipeline nightly and looks up who else works at each company.','38 calls · 7 days','live'],
+      ['Calendar agent','Revoked Aug 12 after it tried to answer a tone check.','0 calls','off']
+    ];
+    const agents = AGENTDEF.map(([name, last, calls, st]) => ({
+      name, last, calls,
+      dot: 'width:7px; height:7px; background:' + (this.state.revoked.indexOf(name) >= 0 || st === 'off' ? '#c9c5b6' : MOSS),
+      action: this.state.revoked.indexOf(name) >= 0 || st === 'off' ? 'Reconnect' : 'Revoke',
+      revoke: () => this.setState({
+        revoked: this.state.revoked.indexOf(name) >= 0 ? this.state.revoked.filter(r => r !== name) : this.state.revoked.concat([name])
+      })
+    }));
+
+    const nav2 = [['setup','Setup'],['rules','Rules'],['agents','Agents']].map(([id,label]) => ({
+      label, go: () => this.setState({ view:id }),
+      style: 'font-family:' + MONO + '; font-size:9.5px; letter-spacing:0.16em; text-transform:uppercase; cursor:pointer; color:' +
+        (v === id ? '#16150f' : '#a8a496')
+    }));
+
+    const connected = this.state.connected;
+    const permissions = [
+      ['Read the last 90 days, once','A single pass to find what is already open. Older mail stays untouched.','Required','yes'],
+      ['Watch new mail as it arrives','Only the threads that contain a question, a date, or a commitment.','Required','yes'],
+      ['Keep a stash per task','Company, role, stage, contact, dates, thread ids. Stored so a task is never invented twice.','Required','yes'],
+      ['Send on your behalf','Off. Eve drafts, you press send. This cannot be turned on from here.','Never','no']
+    ].map(p => ({
+      label:p[0], note:p[1], tag:p[2], glyph: p[3] === 'yes' ? '' : '',
+      mark: 'width:9px; height:9px; margin-top:2px; ' + (p[3] === 'yes' ? 'background:' + MOSS : 'border:1px solid #c9c5b6'),
+      tagStyle: 'font-family:' + MONO + '; font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:' + (p[3] === 'yes' ? '#8a8779' : '#c9c5b6')
+    }));
+
+    const RULEDEF = [
+      ['tasks','Turn asks into tasks','A question with a deadline becomes a task. Everything else stays mail.'],
+      ['dedupe','Merge duplicate asks','Three people asking for the same references produce one task, not three.'],
+      ['pipeline','Track prospects','Build a pipeline when the same company appears across several threads.'],
+      ['clusters','Invent new clusters','Notice a new theme, like a flat search, and give it a home.'],
+      ['holds','Hold calendar slots','Place tentative holds when times are offered, before you reply.'],
+      ['nudge','Draft nudges when someone goes quiet','Write the follow-up. Sending is always yours.']
+    ];
+    const rules = RULEDEF.map(([id,label,note]) => ({
+      label, note,
+      opts: ['Off','Suggest','Act'].map((o, i) => {
+        const on = (this.state.rules[id] || 'Suggest') === o;
+        return {
+          label: o, go: () => this.setState({ rules: Object.assign({}, this.state.rules, { [id]:o }) }),
+          style: 'font-family:' + MONO + '; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; text-align:center; padding:9px 4px; cursor:pointer; border-left:' +
+            (i > 0 ? '1px solid #ddd9cd' : 'none') + '; background:' + (on ? '#16150f' : 'transparent') + '; color:' + (on ? '#f2efe7' : '#8a8779')
+        };
+      })
+    }));
+
+    const PST = { due:'Due', late:'Late', broken:'Broken', kept:'Kept' };
+    const kept = this.state.keptPromises;
+    const pf = this.state.promFilter;
+    const pcount = { all:0, due:0, late:0, kept:0 };
+    PROMISES.forEach(p => {
+      const s = kept.indexOf(p.id) >= 0 ? 'kept' : p.st;
+      if (s === 'kept') pcount.kept++; else { pcount.all++; if (s === 'due') pcount.due++; else pcount.late++; }
+    });
+    const promFilters = [['all','Open',pcount.all],['due','On time',pcount.due],['late','Overdue',pcount.late],['kept','Kept',pcount.kept]].map(([id,label,count]) => ({
+      label, count, go: () => this.setState({ promFilter:id }),
+      style: 'font-family:' + MONO + '; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; cursor:pointer; padding-bottom:12px; margin-bottom:-13px; border-bottom:2px solid ' +
+        (pf === id ? A : 'transparent') + '; color:' + (pf === id ? '#16150f' : '#8a8779')
+    }));
+    const promises = PROMISES.filter(p => {
+      const s = kept.indexOf(p.id) >= 0 ? 'kept' : p.st;
+      if (pf === 'all') return s !== 'kept';
+      if (pf === 'late') return s === 'late' || s === 'broken';
+      return s === pf;
+    }).map(p => {
+      const s = kept.indexOf(p.id) >= 0 ? 'kept' : p.st;
+      const bad = s === 'late' || s === 'broken';
+      return {
+        quote: p.quote, said: p.said, to: p.to, ctx: p.ctx, due: (PST[s] || '') + ' · ' + p.due,
+        glyph: s === 'kept' ? 'width:9px;height:9px;margin-top:7px;background:' + MOSS
+          : bad ? 'width:9px;height:9px;margin-top:7px;background:' + A
+          : 'width:9px;height:9px;margin-top:7px;border:1px solid #a8a496',
+        quoteStyle: 'font-size:19px; line-height:1.45; letter-spacing:-0.02em; text-wrap:pretty; color:' + (s === 'kept' ? '#a8a496' : '#16150f'),
+        dueStyle: 'font-family:' + MONO + '; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; padding-top:8px; white-space:nowrap; color:' +
+          (bad ? A : s === 'kept' ? '#c9c5b6' : '#8a8779'),
+        keepLabel: s === 'kept' ? 'Reopen' : 'Mark kept',
+        keepStyle: 'font-family:' + MONO + '; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; padding:8px 12px; cursor:pointer; ' +
+          (s === 'kept' ? 'border:1px solid #ddd9cd; color:#8a8779' : 'background:#16150f; color:#f2efe7'),
+        keep: () => this.setState({
+          keptPromises: s === 'kept' ? kept.filter(k => k !== p.id) : kept.concat([p.id]),
+          toast: s === 'kept' ? null : { text:'Kept: ' + p.quote, id:'pk', pid:p.id }
+        }),
+        own: () => this.say('Tell ' + p.to.split(' · ')[0] + ' it will be late')
+      };
+    });
+
+    const q = (this.state.query || '').trim().toLowerCase();
+    const results = !q ? [] : []
+      .concat(TASKS.filter(x => (x.title + ' ' + x.co).toLowerCase().indexOf(q) >= 0).map(x => ({
+        kind:'Task', title:x.title, sub:x.co + ' · ' + x.stage + ' · due ' + x.due,
+        go: () => this.setState({ view:'tasks', filter:'all', open:x.id, query:'' })
+      })))
+      .concat(PROMISES.filter(x => (x.quote + ' ' + x.to).toLowerCase().indexOf(q) >= 0).map(x => ({
+        kind:'Promise', title:'\u201c' + x.quote + '\u201d', sub:'You wrote this ' + x.said + ' to ' + x.to,
+        go: () => this.setState({ view:'promises', promFilter:'all', query:'' })
+      })))
+      .concat(Object.keys(THREADS).reduce((acc, cid) => acc.concat(
+        THREADS[cid].filter(x => (x.subject + ' ' + x.from + ' ' + x.eve).toLowerCase().indexOf(q) >= 0).map(x => ({
+          kind:'Thread', title:x.subject, sub:x.from + ' · ' + x.when + ' · ' + x.eve,
+          go: () => this.setState({ view:'mail', cluster:cid, openThread:x.subject, query:'' })
+        }))), []))
+      .concat(PROSPECTS.concat(PLACES).filter(x => (x.co + ' ' + x.role).toLowerCase().indexOf(q) >= 0).map(x => ({
+        kind:'Tracked', title:x.co, sub:x.role + ' · ' + x.stage,
+        go: () => this.setState({ view:'pipeline', query:'' })
+      })));
+
+    const t = this.state.toast;
+    return {
+      promFilters, promises, results,
+      isBrief: v === 'brief' && !q && this.state.connected, isPromises: v === 'promises' && !q && this.state.connected, isSearch: !!q,
+      isFirstRun: !this.state.connected && v !== 'setup' && v !== 'rules' && v !== 'agents',
+      goSetup: () => this.setState({ view:'setup' }),
+      query: this.state.query,
+      onQuery: (e) => this.setState({ query:e.target.value }),
+      searchEyebrow: 'Search · ' + results.length + ' across tasks, promises, threads and trackers',
+      searchHeading: results.length ? '\u201c' + this.state.query + '\u201d' : 'Nothing matches \u201c' + this.state.query + '\u201d',
+      brief: BRIEF.map(([tag, text, go]) => ({
+        tag, text, go: () => this.setState({ view:go, briefRead:true }),
+        tagStyle: 'font-family:' + MONO + '; font-size:9px; letter-spacing:0.15em; text-transform:uppercase; color:' +
+          (tag === 'Collision' || tag === 'Broken' ? A : tag === 'Clear' ? '#c9c5b6' : '#8a8779')
+      })),
+      briefReadLabel: this.state.briefRead ? 'Marked read' : 'Mark read',
+      markBriefRead: () => this.setState({ briefRead:true }),
+      startSession: () => this.setState({ view:'now', briefRead:true }),
+      nextBrief: 'Next brief ' + (this.state.pull === 'live' ? '16:00 · live in between' : this.state.cadence),
+      learned: (this.state.notTasks.length
+        ? ['Today · you called ' + this.state.notTasks.length + ' inference wrong. Eve is looking for what they share.'].concat(LEARNED)
+        : LEARNED).map((text, i) => ({ text, dot: 'width:7px; height:7px; background:' + (i === 0 && this.state.notTasks.length ? A : '#c9c5b6') })),
+      showCollision: !this.state.collisionGone && v === 'tasks',
+      collisionDay: COLLISION.day, collisionNote: COLLISION.note,
+      collisionDot: 'width:7px; height:7px; background:' + A,
+      collisionRows: COLLISION.rows.map(r => ({ who:r[0], what:r[1], why:r[2] })),
+      resolveCollision: () => { this.setState({ collisionGone:true, toast:{ text:'Drafted: ask Ostler Lane for Monday', id:'co' } }); this.say('Ask Ostler Lane to move the references to Monday'); },
+      dismissCollision: () => this.setState({ collisionGone:true }),
+      isScheduled: this.state.pull === 'sched',
+      pullLive: () => this.setState({ pull:'live' }),
+      pullSched: () => this.setState({ pull:'sched' }),
+      pullLiveStyle: 'display:flex; align-items:center; gap:7px; font-family:' + MONO + '; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; padding:9px 13px; cursor:pointer; background:' +
+        (this.state.pull === 'live' ? '#16150f' : 'transparent') + '; color:' + (this.state.pull === 'live' ? '#f2efe7' : '#8a8779'),
+      pullSchedStyle: 'font-family:' + MONO + '; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; padding:9px 13px; cursor:pointer; border-left:1px solid #ddd9cd; background:' +
+        (this.state.pull === 'sched' ? '#16150f' : 'transparent') + '; color:' + (this.state.pull === 'sched' ? '#f2efe7' : '#8a8779'),
+      pullDotStyle: 'width:6px; height:6px; display:inline-block; background:' + (this.state.pull === 'live' ? MOSS : '#c9c5b6') +
+        (this.state.pull === 'live' ? '; animation:mgpulse 1.9s ease-in-out infinite' : ''),
+      cadences: ['15 min','Hourly','9:00 & 16:00'].map(c => ({
+        label: c, go: () => this.setState({ cadence:c }),
+        style: 'font-family:' + MONO + '; font-size:9px; letter-spacing:0.11em; text-transform:uppercase; padding:6px 9px; cursor:pointer; border:1px solid ' +
+          (this.state.cadence === c ? '#16150f' : '#ddd9cd') + '; color:' + (this.state.cadence === c ? '#16150f' : '#a8a496')
+      })),
+      pullNote: this.state.pull === 'live'
+        ? 'Watching now · 3 threads since 09:00'
+        : 'Paused · next pull ' + (this.state.cadence === '15 min' ? '11:45' : this.state.cadence === 'Hourly' ? '12:00' : '16:00'),
+      pullNoteStyle: 'font-family:' + MONO + '; font-size:9px; letter-spacing:0.11em; text-transform:uppercase; color:' +
+        (this.state.pull === 'live' ? MOSS : '#a8a496'),
+      nav, nav2, filters, tasks, prospects, clusters, threads, eveMsgs, permissions, rules,
+      isTasks: v === 'tasks' && !q && this.state.connected, isPipeline: v === 'pipeline' && !q && this.state.connected, isMail: v === 'mail' && !q && this.state.connected,
+      isSetup: v === 'setup' && !q, isRules: v === 'rules' && !q, isNow: v === 'now' && !q && this.state.connected, isAgents: v === 'agents' && !q,
+      tools, agents,
+      toolSummary: tools.filter(t => t.switchLabel === 'Enabled').length + ' of ' + tools.length + ' enabled',
+      gateDot: 'width:5px; height:5px; margin-top:8px; flex:0 0 5px; background:' + A,
+      copyLabel: this.state.copied ? 'Copied' : 'Copy',
+      copyStyle: 'font-family:' + MONO + '; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; padding:8px 12px; cursor:pointer; white-space:nowrap; ' +
+        (this.state.copied ? 'background:' + MOSS + '; color:#16150f' : 'background:#16150f; color:#f2efe7'),
+      copyEndpoint: () => { this.setState({ copied:true }); setTimeout(() => this.setState({ copied:false }), 1600); },
+      nowActive: !!cur, nowFinished: !cur,
+      nowTitle: cur ? cur.title : '', nowTo: cur ? cur.to : '', nowSubj: cur ? cur.subj : '',
+      nowEv: cur ? cur.ev : '', nowSrc: cur ? cur.src : '',
+      nowEvDot: 'width:5px; height:5px; margin-top:7px; flex:0 0 5px; background:' + A,
+      nowDraftA, nowSlot, nowDraftB,
+      nowSlotStyle: nowSlot && nowSlot.indexOf('—') === 0
+        ? 'color:' + A + '; letter-spacing:-0.06em'
+        : 'background:color-mix(in oklab, ' + MOSS + ' 22%, transparent); padding:1px 2px',
+      checks,
+      sessionDots: NOW.map((n, i) => ({
+        style: 'width:9px; height:9px; background:' + (i < idx ? '#16150f' : i === idx ? A : 'transparent') +
+          (i > idx ? '; border:1px solid #c9c5b6' : '')
+      })),
+      sessionLabel: cur ? (idx + 1) + ' of ' + NOW.length + ' · about ' + (NOW.length - idx) * 4 + ' minutes left' : NOW.length + ' of ' + NOW.length + ' · session complete',
+      gateCount: gateLeft === 0 ? 'All clear' : gateLeft + ' left',
+      gateCountStyle: 'font-family:' + MONO + '; font-size:10px; letter-spacing:0.13em; text-transform:uppercase; color:' + (gateLeft ? A : MOSS),
+      gateNote: gateLeft ? 'Eve wrote the draft.\nShe cannot clear these for you.' : 'Every claim in this draft\ntraces back to a source.',
+      sendLabel: gateLeft ? 'Locked · ' + gateLeft + ' unanswered' : 'Send and close',
+      sendStyle: 'font-family:' + MONO + '; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; padding:14px 20px; ' +
+        (gateLeft ? 'border:1px dashed #c9c5b6; color:#c9c5b6; cursor:not-allowed' : 'background:#16150f; color:#f2efe7; cursor:pointer'),
+      sendNow: () => {
+        if (gateLeft || !cur) return;
+        this.setState({
+          nowIdx: idx + 1, openCheck:null,
+          done: this.state.done.concat([cur.id]),
+          ledger: this.state.ledger.concat([{ line:'Sent · ' + cur.to.split(' · ')[0] + ' · ' + cur.subj }]),
+          toast: { text:'Sent: ' + cur.subj, id:cur.id },
+          msgs: this.state.msgs.concat([{ who:'Eve', text:'Sent to ' + cur.to.split(' · ')[0] + '. ' + (NOW[idx + 1] ? 'Next up: ' + NOW[idx + 1].title.toLowerCase() + '.' : 'That was the last one.') }])
+        });
+      },
+      skipNow: () => this.setState({ nowIdx: idx + 1, openCheck:null, ledger: this.state.ledger.concat([{ line:'Skipped · ' + (cur ? cur.title : '') }]) }),
+      restart: () => this.setState({ nowIdx:0, slots:{}, openCheck:null, ledger:[] }),
+      ledger: this.state.ledger.length ? this.state.ledger : [{ line:'Nothing sent this session.' }],
+      connectLabel: connected ? 'Connected' : 'Connect Gmail',
+      connectStyle: 'font-family:' + MONO + '; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; padding:12px 18px; cursor:pointer; white-space:nowrap; ' +
+        (connected ? 'border:1px solid #c9c5b6; color:#8a8779' : 'background:#16150f; color:#f2efe7'),
+      connect: () => this.setState({ connected: !connected }),
+      scanBarStyle: 'height:2px; width:' + (connected ? '100%' : '0%') + '; background:' + A + '; transition:width 1.6s cubic-bezier(.3,.8,.3,1)',
+      scanLabel: connected ? '4,118 threads read · 41 open · 9 tasks · 7 duplicates discarded' : 'Waiting to connect',
+      tasksSubline: counts.now + ' need you · ' + counts.wait + ' waiting on someone else · ' + counts.later + ' later',
+      dedupeNote: 'Eve read 41 threads to build this list and threw away 7 duplicates.\nA task never appears twice, even when the same ask arrives from three people.',
+      stages: tk.stages.map((name, i) => ({
+        name, count: tk.rows.filter(r => r.at >= i + 1).length,
+        style: 'padding:16px 14px 20px; border-right:' + (i < 4 ? '1px solid #ddd9cd' : 'none')
+      })),
+      trackerTabs, suggestions,
+      trackerName: tkNone ? 'Nothing tracked' : this.state.trackerNames[tk.id],
+      trackerNote: tk.note,
+      renaming: this.state.renaming, notRenaming: !this.state.renaming && !tkNone,
+      renameVal: this.state.renameVal,
+      startRename: () => this.setState({ renaming:true, renameVal:this.state.trackerNames[tk.id] }),
+      onRename: (e) => this.setState({ renameVal:e.target.value }),
+      onRenameKey: (e) => { if (e.key === 'Enter') this.commitName(tk.id); },
+      commitRename: () => this.commitName(tk.id),
+      trackerEmpty: tkNone,
+      hasTrackerSuggestion: tkOn.indexOf('places') < 0 && this.state.dismissed.indexOf('places') < 0,
+      trackerSuggestName: TRACKER_SUGGEST.name, trackerSuggestWhy: TRACKER_SUGGEST.why,
+      suggestDot: 'background:' + A,
+      acceptTracker: () => this.setState({ trackersOn: tkOn.concat(['places']), trackerId:'places',
+        toast:{ text:'Now tracking: Places to Live', id:'tk' } }),
+      dismissTracker: () => this.setState({ dismissed: this.state.dismissed.concat(['places']) }),
+      hasClusterSuggestions: suggestions.length > 0,
+      selectedClusterLabel: curCluster.name,
+      clusterActStyle: 'font-family:' + MONO + '; font-size:9.5px; letter-spacing:0.13em; text-transform:uppercase; color:#5c5a50; cursor:pointer; border-bottom:1px solid #ddd9cd; padding-bottom:2px',
+      muteLabel: muted ? 'Unmute' : 'Mute',
+      muteCluster: () => this.setState({ mutedClusters: muted
+        ? this.state.mutedClusters.filter(m => m !== curCluster.id)
+        : this.state.mutedClusters.concat([curCluster.id]) }),
+      deleteCluster: () => this.setState({
+        deletedClusters: this.state.deletedClusters.concat([curCluster.id]),
+        cluster: (allClusters.filter(c => c.id !== curCluster.id)[0] || { id:'rest' }).id,
+        toast:{ text:'Deleted cluster: ' + curCluster.name, id:'cd' }
+      }),
+      renamingCluster: this.state.renamingCluster, notRenamingCluster: !this.state.renamingCluster,
+      clusterRenameVal: this.state.clusterRenameVal,
+      startClusterRename: () => this.setState({ renamingCluster:true, clusterRenameVal:curCluster.name }),
+      onClusterRename: (e) => this.setState({ clusterRenameVal:e.target.value }),
+      onClusterRenameKey: (e) => { if (e.key === 'Enter') this.commitCluster(curCluster.id); },
+      commitClusterRename: () => this.commitCluster(curCluster.id),
+      hasBin: this.state.dismissed.length > 0,
+      binLabel: binOpen ? 'Hide dismissed' : this.state.dismissed.length + ' dismissed · show them',
+      toggleBin: () => this.setState({ showBin: !binOpen }),
+      stopTracking: () => this.setState({
+        trackersOn: tkOn.filter(id => id !== tk.id),
+        trackerId: (tkOn.filter(id => id !== tk.id)[0] || 'job'),
+        dismissed: this.state.dismissed.concat([tk.id]),
+        toast:{ text:'Stopped tracking ' + this.state.trackerNames[tk.id], id:'ts', tk:tk.id }
+      }),
+      clusterGridStyle: 'display:grid; grid-template-columns:repeat(' + Math.min(allClusters.length, 4) + ',1fr); gap:1px; background:#ddd9cd; border:1px solid #ddd9cd; margin-top:' + (suggestions.length ? '30px' : '40px'),
+      eveChips: this.state.chips.map(c => ({ label:c, go: () => this.say(c) })),
+      eveInput: this.state.input,
+      onEveInput: (e) => this.setState({ input:e.target.value }),
+      onEveKey: (e) => { if (e.key === 'Enter' && this.state.input.trim()) { const q = this.state.input; this.setState({ input:'' }); this.say(q); } },
+      sendEve: () => { if (this.state.input.trim()) { const q = this.state.input; this.setState({ input:'' }); this.say(q); } },
+      eveWrapStyle: 'width:376px; flex:0 0 376px; background:#16150f; color:#f2efe7; margin:0; height:100vh',
+      toastStyle: 'position:fixed; left:50%; bottom:' + (t ? '32px' : '-80px') + '; transform:translateX(-50%); background:#16150f; color:#f2efe7; font-family:' + MONO +
+        '; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; padding:13px 18px; transition:bottom .28s cubic-bezier(.2,.7,.3,1); z-index:50; opacity:' + (t ? 1 : 0),
+      toastText: t ? t.text : '',
+      undo: () => {
+        const cur = this.state.toast;
+        if (!cur) return;
+        if (cur.id === 'cl') this.setState({ acceptedClusters: this.state.acceptedClusters.slice(0, -1), cluster:'search' });
+        else if (cur.id === 'tk') this.setState({ trackersOn:['job'], trackerId:'job' });
+        else if (cur.id === 'cd') this.setState({ deletedClusters: this.state.deletedClusters.slice(0, -1) });
+        else if (cur.id === 'nt') this.setState({ notTasks: this.state.notTasks.filter(x => x !== cur.tid) });
+        else if (cur.id === 'pr') { const ps = Object.assign({}, this.state.prospectState); delete ps[cur.co]; this.setState({ prospectState: ps }); }
+        else if (cur.id === 'ts') this.setState({ trackersOn: this.state.trackersOn.concat([cur.tk]), trackerId: cur.tk, dismissed: this.state.dismissed.filter(d => d !== cur.tk) });
+        else if (cur.id !== 'sn' && cur.id !== 'rn') this.toggleDone(cur.id, '');
+        this.setState({ toast:null });
+      }
+    };
+  }
+}
+
+</script>
+</body>
+</html>

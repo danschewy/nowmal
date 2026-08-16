@@ -1,0 +1,45 @@
+{
+  "name": "nowmal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "eve build && next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "eve:info": "eve info"
+  },
+  "dependencies": {
+    "@clerk/backend": "^3.16.6",
+    "@clerk/nextjs": "^7.7.6",
+    "@neondatabase/serverless": "^1.1.0",
+    "ai": "^7.0.66",
+    "drizzle-orm": "^0.45.2",
+    "eve": "^0.38.3",
+    "next": "^16.3.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.4",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "esbuild": "^0.28.2",
+    "jsdom": "^30.0.1",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

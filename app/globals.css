@@ -1,0 +1,59 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=JetBrains+Mono:wght@400;500&display=swap");
+
+:root {
+  color-scheme: light;
+  --bone: #f2efe7;
+  --paper: #fbf9f4;
+  --paper-alt: #f7f5ef;
+  --ink: #16150f;
+  --ink-soft: #5c5a50;
+  --ink-mute: #8a8779;
+  --ink-faint: #a8a496;
+  --ink-ghost: #c9c5b6;
+  --hairline: #ddd9cd;
+  --hairline-soft: #e6e2d6;
+  --accent: oklch(0.62 0.16 25);
+  --moss: oklch(0.62 0.16 145);
+  --human: "Bricolage Grotesque", "Helvetica Neue", Helvetica, sans-serif;
+  --machine: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bone);
+  color: var(--ink);
+  font-family: var(--human);
+  text-wrap: pretty;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  border-radius: 0;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent) 28%, transparent);
+}
