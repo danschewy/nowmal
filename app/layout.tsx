@@ -25,5 +25,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   );
 
   if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) return document;
-  return <ClerkProvider>{document}</ClerkProvider>;
+  return (
+    <ClerkProvider
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      signInFallbackRedirectUrl="/workspace"
+      signUpFallbackRedirectUrl="/workspace"
+    >
+      {document}
+    </ClerkProvider>
+  );
 }

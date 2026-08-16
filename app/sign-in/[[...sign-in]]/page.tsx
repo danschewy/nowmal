@@ -17,7 +17,12 @@ export default function SignInPage() {
 
   return (
     <main className="auth-page">
-      <SignIn signUpUrl="/sign-up" />
+      <SignIn
+        path="/sign-in"
+        routing="path"
+        signUpUrl="/sign-up"
+        fallbackRedirectUrl="/workspace"
+      />
     </main>
   );
 }
