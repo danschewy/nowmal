@@ -43,7 +43,7 @@ export function TrackersScreen() {
 
   return (
     <div className="screen">
-      <Eyebrow>Trackers · built out of your mail, named by you</Eyebrow>
+      <Eyebrow>Trackers · repeated processes, kept current</Eyebrow>
       <div className="tracker-tabs">
         {state.trackersOn.map((id) => (
           <button
@@ -59,10 +59,10 @@ export function TrackersScreen() {
 
       {!state.trackersOn.length || !trackerOn ? (
         <div className="tracker-empty">
-          <h1>Nothing tracked</h1>
+          <h1>No active trackers</h1>
           <p>
-            Nothing is being tracked. Eve keeps reading, and will offer something again when a
-            pattern is worth a tracker.
+            When related conversations start to follow the same stages—like a job search or a
+            move—Eve will suggest a tracker. You decide whether to create it.
           </p>
         </div>
       ) : (
@@ -103,7 +103,7 @@ export function TrackersScreen() {
                     notify("Now tracking: Places to Live", { kind: "accept-tracker", id: "places" });
                   }}
                 >Track it</ActionButton>
-                <ActionButton onClick={() => patch({ dismissedSuggestions: [...state.dismissedSuggestions, "places"] })}>No</ActionButton>
+                <ActionButton onClick={() => patch({ dismissedSuggestions: [...state.dismissedSuggestions, "places"] })}>Not now</ActionButton>
               </div>
             </div>
           )}
@@ -150,14 +150,14 @@ export function TrackersScreen() {
                       >
                         {stageIndex >= tracker.stages.length ? "At final stage" : `Advance to ${tracker.stages[stageIndex]}`}
                       </ActionButton>
-                      <ActionButton onClick={() => updateProspect(row.id, { closed: !closed })}>{closed ? "Reopen" : "Closed, no"}</ActionButton>
+                      <ActionButton onClick={() => updateProspect(row.id, { closed: !closed })}>{closed ? "Reopen" : "Close"}</ActionButton>
                       <ActionButton
                         tone="ghost"
                         onClick={() => {
                           updateProspect(row.id, { gone: true });
                           notify(`Removed: ${row.name}`, { kind: "remove-prospect", id: row.id });
                         }}
-                      >Not a real one</ActionButton>
+                      >Remove from tracker</ActionButton>
                     </div>
                   ) : null}
                 </article>

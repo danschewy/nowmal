@@ -13,11 +13,11 @@ export function NowScreen() {
     return (
       <div className="screen">
         <div className="screen-inner-800 now-complete">
-          <Eyebrow>Now · Focused session</Eyebrow>
-          <PageHeading>Cleared.</PageHeading>
-          <p>Every send crossed a gate. Eve kept the evidence; you made the calls.</p>
+          <Eyebrow>Now · Review complete</Eyebrow>
+          <PageHeading>You are caught up.</PageHeading>
+          <p>You reviewed the evidence and made every decision. Nothing was approved silently.</p>
           <div className="session-ledger">
-            {(state.ledger.length ? state.ledger : ["Nothing sent this session."]).map((line) => (
+            {(state.ledger.length ? state.ledger : ["No sample sends approved this session."]).map((line) => (
               <div key={line}>{line}</div>
             ))}
           </div>
@@ -33,7 +33,7 @@ export function NowScreen() {
               }))
             }
           >
-            Run it again
+            Review again
           </ActionButton>
         </div>
       </div>
@@ -63,13 +63,13 @@ export function NowScreen() {
       doneTasks: current.doneTasks.includes(item.id)
         ? current.doneTasks
         : [...current.doneTasks, item.id],
-      ledger: [...current.ledger, `Sent · ${recipient} · ${item.subject}`],
+      ledger: [...current.ledger, `Approved sample · ${recipient} · ${item.subject}`],
       messages: [
         ...current.messages,
         {
           id: `eve-send-${Date.now()}`,
           who: "Eve",
-          text: `Approved and sent to ${recipient}. ${
+          text: `Approved in the sample workflow for ${recipient}. ${
             NOW_ITEMS[current.nowIndex + 1]
               ? `Next up: ${NOW_ITEMS[current.nowIndex + 1].title.toLowerCase()}.`
               : "That was the last one."
@@ -77,14 +77,14 @@ export function NowScreen() {
         },
       ],
     }));
-    notify(`Sent: ${item.subject}`, { kind: "task-done", id: item.id });
+    notify(`Sample send approved: ${item.subject}`, { kind: "task-done", id: item.id });
   };
 
   return (
     <div className="screen">
       <div className="screen-inner-800">
-        <Eyebrow>Now · Focused session</Eyebrow>
-        <PageHeading>One at a time, until they are gone.</PageHeading>
+        <Eyebrow>Now · Review and approve</Eyebrow>
+        <PageHeading>Give each draft your full attention.</PageHeading>
 
         <div className="session-progress" aria-label={`Task ${state.nowIndex + 1} of ${NOW_ITEMS.length}`}>
           <div>
@@ -124,7 +124,7 @@ export function NowScreen() {
                 </span>
               }
             >
-              Before this sends
+              Check before approving
             </SectionLabel>
 
             <div className="check-list">
@@ -183,7 +183,7 @@ export function NowScreen() {
               >
                 {unresolved.length
                   ? `Locked · ${unresolved.length} unanswered`
-                  : "Approve, send and close"}
+                  : "Approve sample send"}
               </ActionButton>
               <ActionButton
                 tone="ghost"
@@ -201,8 +201,8 @@ export function NowScreen() {
             </div>
             <p>
               {unresolved.length
-                ? "Eve wrote the draft.\nShe cannot clear these for you."
-                : "Every claim in this draft\ntraces back to a source."}
+                ? "Eve prepared the draft.\nThese answers must come from you."
+                : "The evidence is checked.\nFinal approval is still yours."}
             </p>
           </footer>
         </section>

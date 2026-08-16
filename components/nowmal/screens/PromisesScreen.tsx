@@ -6,7 +6,7 @@ import { ActionButton, Eyebrow, Lede, PageHeading, StatusSquare } from "../ui";
 
 const filters: { id: PromiseFilter; label: string }[] = [
   { id: "all", label: "Open" },
-  { id: "due", label: "On time" },
+  { id: "due", label: "Due soon" },
   { id: "late", label: "Overdue" },
   { id: "kept", label: "Kept" },
 ];
@@ -43,7 +43,7 @@ export function PromisesScreen() {
         {
           id: `eve-late-${Date.now()}`,
           who: "Eve",
-          text: "I drafted a direct note that owns the miss and gives one new date. It is waiting in Now for your review.",
+            text: "I drafted a short update that acknowledges the delay and offers one clear new date. It is ready for your review in Now.",
           draft: `Hi ${recipient.split(" ")[0]},\n\nI said I would have this to you already, and I missed that. I can send it by Monday. Sorry for leaving the gap unexplained.\n\nJ.`,
         },
       ],
@@ -54,11 +54,11 @@ export function PromisesScreen() {
   return (
     <div className="screen">
       <div className="screen-inner-880">
-        <Eyebrow>Promises · read out of your sent mail</Eyebrow>
-        <PageHeading>The things you said you would do.</PageHeading>
+        <Eyebrow>Promises · commitments from sent mail</Eyebrow>
+        <PageHeading>Keep track of what you said you would do.</PageHeading>
         <Lede>
-          Tasks come from what people ask of you. These come from what you wrote back. Same
-          evidence, opposite direction, and the one nobody tracks.
+          Tasks capture requests from other people. Promises capture commitments in your replies.
+          Nowmal links them so one obligation does not become two reminders.
         </Lede>
 
         <div className="filter-bar promise-filters" role="group" aria-label="Promise filters">
@@ -92,12 +92,12 @@ export function PromisesScreen() {
                       {status === "kept" ? "Reopen" : "Mark kept"}
                     </ActionButton>
                     {status !== "kept" ? (
-                      <ActionButton onClick={() => sayLate(promise.to)}>Say it will be late</ActionButton>
+                      <ActionButton onClick={() => sayLate(promise.to)}>Draft an update</ActionButton>
                     ) : null}
                   </div>
                 </div>
                 <span className={bad ? "bad" : ""}>
-                  {status === "kept" ? "Kept" : status === "broken" ? "Broken" : status === "late" ? "Late" : "Due"} · {promise.due}
+                  {status === "kept" ? "Kept" : status === "broken" ? "Missed" : status === "late" ? "Overdue" : "Due"} · {promise.due}
                 </span>
               </article>
             );

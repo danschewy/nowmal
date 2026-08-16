@@ -41,12 +41,12 @@ export function MailScreen() {
 
   return (
     <div className="screen">
-      <Eyebrow>Mail · 275 threads, {allClusters.length} clusters</Eyebrow>
-      <PageHeading>Sorted by what it is about, not when it arrived.</PageHeading>
+      <Eyebrow>Mail · 275 sample threads, {allClusters.length} groups</Eyebrow>
+      <PageHeading>See conversations by topic, not arrival time.</PageHeading>
 
       {suggestions.length ? (
         <section className="cluster-suggestions">
-          <div>Eve noticed a pattern</div>
+          <div>Suggested groups</div>
           {suggestions.map((suggestion) => (
             <article key={suggestion.id}>
               <span />
@@ -60,10 +60,10 @@ export function MailScreen() {
                   tone="solid"
                   onClick={() => {
                     patch({ acceptedClusters: [...state.acceptedClusters, suggestion.id], clusterId: suggestion.id });
-                    notify(`Created cluster: ${suggestion.name}`, { kind: "accept-cluster", id: suggestion.id });
+                    notify(`Created group: ${suggestion.name}`, { kind: "accept-cluster", id: suggestion.id });
                   }}
-                >Make a cluster</ActionButton>
-                <ActionButton onClick={() => patch({ dismissedSuggestions: [...state.dismissedSuggestions, suggestion.id] })}>Not a thing</ActionButton>
+                >Create group</ActionButton>
+                <ActionButton onClick={() => patch({ dismissedSuggestions: [...state.dismissedSuggestions, suggestion.id] })}>Dismiss</ActionButton>
               </div>
             </article>
           ))}
@@ -118,12 +118,12 @@ export function MailScreen() {
               onClick={() => {
                 const fallback = allClusters.find((item) => item.id !== cluster.id)?.id ?? "rest";
                 patch({ deletedClusters: [...state.deletedClusters, cluster.id], clusterId: fallback });
-                notify(`Deleted cluster: ${cluster.name}`, { kind: "delete-cluster", id: cluster.id });
+                notify(`Deleted group: ${cluster.name}`, { kind: "delete-cluster", id: cluster.id });
               }}
             >Delete</button>
           </>
         )}
-        <span>Deleting a cluster never deletes mail. Threads go back to Everything Else.</span>
+        <span>Deleting a group never deletes mail. Its threads return to Everything Else.</span>
       </div>
 
       {dismissedThreadIds.length ? (
@@ -144,11 +144,11 @@ export function MailScreen() {
               </button>
               {open ? (
                 <div className="thread-reader">
-                  <div>{thread.task ? "The sentence Eve acted on" : "What Eve read, and let go"}</div>
+                  <div>{thread.task ? "Why this became a task" : "Why this stayed as mail"}</div>
                   <blockquote>“{thread.quote ?? thread.eve}”</blockquote>
                   <p>{thread.eve}</p>
                   <div>
-                    <ActionButton tone="solid" onClick={() => notify("Gmail deep link opens after the real account is connected")}>Open in Gmail</ActionButton>
+                    <ActionButton tone="solid" onClick={() => notify("Connect your own Gmail to open the original thread")}>Open in Gmail</ActionButton>
                     <ActionButton
                       onClick={() => {
                         setState((current) => ({
@@ -158,7 +158,7 @@ export function MailScreen() {
                         }));
                         notify("Stopped reading this thread");
                       }}
-                    >Stop reading this thread</ActionButton>
+                    >Dismiss this thread</ActionButton>
                   </div>
                 </div>
               ) : null}

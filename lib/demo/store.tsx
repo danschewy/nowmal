@@ -80,7 +80,7 @@ export const initialDemoState: DemoState = {
   view: "tasks",
   query: "",
   connected: true,
-  threadCount: 4_118,
+  threadCount: 100,
   sendEnabled: false,
   briefRead: false,
   filter: "all",

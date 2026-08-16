@@ -63,7 +63,7 @@ export function SearchScreen() {
       if (`${row.name} ${row.role}`.toLowerCase().includes(query)) {
         results.push({
           key: `tracked-${tracker.id}-${row.id}`,
-          kind: "Tracked",
+        kind: "Tracker",
           title: row.name,
           sub: `${row.role} · ${row.stage}`,
           go: () => patch({ view: "pipeline", trackerId: tracker.id, query: "" }),
@@ -74,8 +74,8 @@ export function SearchScreen() {
 
   return (
     <div className="screen screen-search">
-      <Eyebrow>Search · {results.length} across tasks, promises, threads and trackers</Eyebrow>
-      <h1>{results.length ? `“${state.query}”` : `Nothing matches “${state.query}”`}</h1>
+      <Eyebrow>Search · tasks, promises, mail, and trackers</Eyebrow>
+      <h1>{results.length ? `${results.length} ${results.length === 1 ? "result" : "results"} for “${state.query}”` : `No results for “${state.query}”`}</h1>
       <div className="search-results">
         {results.map((result) => (
           <button key={result.key} type="button" onClick={result.go}>

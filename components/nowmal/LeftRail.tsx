@@ -51,11 +51,11 @@ export function LeftRail({
       </div>
 
       <label className="search-field">
-        <span className="sr-only">Search everything</span>
+        <span className="sr-only">Search tasks, people, or mail</span>
         <input
           value={state.query}
           onChange={(event) => patch({ query: event.target.value })}
-          placeholder="Search everything"
+          placeholder="Search tasks, people, or mail"
           type="search"
         />
       </label>
@@ -94,17 +94,17 @@ export function LeftRail({
         <div className="sync-line">
           <span className="moss-dot" />
           {mode === "demo"
-            ? "PUBLIC DEMO · SEEDED"
+            ? "SAMPLE INBOX · SAFE TO EXPLORE"
             : state.connected
-              ? "GMAIL CONNECTED · INCREMENTAL"
-              : "GMAIL NOT CONNECTED"}
+              ? "GMAIL CONNECTED · UP TO DATE"
+              : "GMAIL READY TO CONNECT"}
         </div>
         <p>{product.principle.toUpperCase()}</p>
         {mode === "demo" ? (
           <div className="demo-links">
-            <Link href="/workspace">Connect Gmail</Link>
+            <Link href="/workspace">Use your Gmail</Link>
             <button type="button" onClick={reset}>
-              Reset demo
+              Reset sample
             </button>
           </div>
         ) : null}

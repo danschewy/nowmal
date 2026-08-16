@@ -418,7 +418,7 @@ export const TRACKERS: Record<string, Tracker> = {
     name: "Job Search",
     stages: ["Applied", "Screen", "Interview", "Onsite", "Offer"],
     rows: JOB_ROWS,
-    note: "Six companies, read out of 41 threads.\nNobody typed any of this in.",
+    note: "Six companies across 41 threads.\nStages and next steps stay current as replies arrive.",
   },
   places: {
     id: "places",
@@ -426,7 +426,7 @@ export const TRACKERS: Record<string, Tracker> = {
     stages: ["Enquired", "Viewing", "Viewed", "Applied", "Signed"],
     rows: PLACE_ROWS,
     note:
-      "Five places, read out of the letting agents.\nStages were guessed from how the threads actually go.",
+      "Five places across twelve agent threads.\nStages are inferred from enquiries, viewings, and applications.",
   },
 };
 
@@ -434,7 +434,7 @@ export const TRACKER_SUGGESTION = {
   id: "places",
   name: "Places to Live",
   reason:
-    "Four letting agents and twelve threads since Aug 9, all following the same shape: enquire, view, apply. Eve can track them the way she tracks the job search.",
+    "Four letting agents and twelve related threads follow the same path: enquire, view, apply. A tracker would keep every place and next step together.",
 } as const;
 
 export const CLUSTERS: readonly Cluster[] = [
@@ -609,7 +609,7 @@ export const THREADS: Record<string, readonly MailThread[]> = {
       when: "Aug 06",
       subject: "Hold expires in 48 hours",
       quote: "This fare is held for 48 hours and will be released after that",
-      eve: "A held fare, unpaid. This is the only real deadline in the cluster.",
+      eve: "A held fare, unpaid. This is the only real deadline in the group.",
       task: true,
     },
     {
@@ -696,8 +696,8 @@ export const BRIEF = [
     "tasks",
   ],
   [
-    "Broken",
-    "You told Marguerite the scope would go out this week. It did not.",
+    "Missed",
+    "You told Marguerite the scope would go out this week. The deadline passed without a reply.",
     "promises",
   ],
   [
@@ -727,44 +727,44 @@ export const COLLISION = {
     ["Ostler Lane", "References for the tenancy, by Friday", "Their deadline"],
   ],
   note:
-    "Both want the same favour from the same two people. Tobin and Alia would each get two requests in one afternoon.",
+    "Both requests rely on Tobin and Alia, which would mean asking each person twice in one afternoon.",
 } as const;
 
 export const RULES = [
   {
     id: "tasks",
-    label: "Turn asks into tasks",
+    label: "Create tasks from clear requests",
     description:
-      "A question with a deadline becomes a task. Everything else stays mail.",
+      "A direct request with a deadline becomes a task. Everything else stays as mail.",
   },
   {
     id: "dedupe",
-    label: "Merge duplicate asks",
+    label: "Merge duplicate requests",
     description:
-      "Three people asking for the same references produce one task, not three.",
+      "The same request across several messages produces one task, not several.",
   },
   {
     id: "pipeline",
-    label: "Track prospects",
+    label: "Keep multi-step work in trackers",
     description:
-      "Build a pipeline when the same company appears across several threads.",
+      "Suggest a tracker when related conversations follow the same stages.",
   },
   {
     id: "clusters",
-    label: "Invent new clusters",
+    label: "Suggest useful mail groups",
     description:
-      "Notice a new theme, like a flat search, and give it a home.",
+      "Recommend a group when several threads share a clear topic.",
   },
   {
     id: "holds",
-    label: "Hold calendar slots",
+    label: "Suggest calendar holds",
     description:
-      "Place tentative holds when times are offered, before you reply.",
+      "Offer tentative holds when someone sends you a choice of times.",
   },
   {
     id: "nudge",
-    label: "Draft nudges when someone goes quiet",
-    description: "Write the follow-up. Sending is always yours.",
+    label: "Draft follow-ups when someone goes quiet",
+    description: "Prepare a concise follow-up for your review. Never send it automatically.",
   },
 ] as const;
 
@@ -810,7 +810,7 @@ export const NOW_ITEMS: readonly NowItem[] = [
         text: "Names two referees",
         question: "Who should Dana contact?",
         note:
-          "Eve found both in your sent mail from March, but will not put a name in an email you did not choose.",
+          "Both names appear in your sent mail, but Eve will not add either person until you choose them.",
         options: [
           {
             label: "Tobin Wray and Alia Ferrand",
@@ -825,7 +825,7 @@ export const NOW_ITEMS: readonly NowItem[] = [
         text: "Both have agreed to be contacted",
         question: "Have you actually asked them?",
         note:
-          "Nothing in your mail shows you did. Eve will not claim it on your behalf.",
+          "Your mail does not show that they agreed. The draft cannot make that claim without you.",
         options: [
           { label: "Yes, both agreed", value: "yes" },
           { label: "Not yet, soften the line", value: "soften" },
@@ -901,9 +901,9 @@ export const NOW_ITEMS: readonly NowItem[] = [
       {
         key: "c3",
         text: "Read it. Does this sound like you?",
-        question: "Eve cannot judge tone, and will not pretend to.",
+        question: "Does the tone sound like you?",
         note:
-          "This is the one gate that never clears on its own. Someone has to have read the words before they leave.",
+          "Tone is personal, so this check always needs your answer before the draft can leave.",
         options: [
           { label: "Yes, send as written", value: "yes" },
           { label: "Too soft", value: "firm" },
@@ -991,36 +991,36 @@ export const EVE_SCRIPT: Record<
 };
 
 export const AGENT_TOOLS = [
-  ["list_tasks", "Every open task with its status, stage and due date.", "Read", true],
+  ["list_tasks", "List open tasks with stable IDs, status, stage, and due date.", "Read", true],
   [
     "get_evidence",
-    "The exact sentence a task came from, plus thread id and sender.",
+    "Return the exact source sentence, Gmail thread ID, and sender for a task.",
     "Read",
     true,
   ],
   [
     "get_stash",
-    "Company, role, contact, dates, thread ids. The dedupe key lives here.",
+    "Return normalized context, source thread IDs, and the task's dedupe key.",
     "Read",
     true,
   ],
-  ["search_threads", "Full-text over the bounded mail Eve has read.", "Read", true],
-  ["draft_reply", "Write a draft into Now. It queues, it does not send.", "Write draft", true],
+  ["search_threads", "Search only the bounded Gmail index for this workspace.", "Read", true],
+  ["draft_reply", "Queue a reply in Now for review. This tool never sends.", "Write draft", true],
   [
     "answer_check",
-    "Resolve an evidence check, but only with a citable source.",
+    "Resolve an evidence check only when a Gmail source supports the answer.",
     "Gated",
     true,
   ],
   [
     "sync_gmail",
-    "Refresh changed Gmail threads from the last durable history cursor.",
+    "Fetch conversations that changed since the last successful Gmail sync.",
     "Gated",
     true,
   ],
   [
     "send_email",
-    "Send one cleared Now draft after a fresh human approval. Idempotent and audited.",
+    "Send one cleared Now draft after fresh human approval, with retry protection and an audit record.",
     "Gated",
     true,
   ],

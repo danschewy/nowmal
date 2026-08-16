@@ -32,7 +32,7 @@ describe("Nowmal public demo", () => {
     await user.click(screen.getByRole("button", { name: /Both have agreed to be contacted/i }));
     await user.click(screen.getByRole("button", { name: /Yes, both agreed/i }));
 
-    const send = screen.getByRole("button", { name: /Approve, send and close/i });
+    const send = screen.getByRole("button", { name: /Approve sample send/i });
     expect((send as HTMLButtonElement).disabled).toBe(false);
     await user.click(send);
     expect(screen.getByText("Confirm Tuesday 10:00 with Northline Systems")).toBeTruthy();
@@ -41,12 +41,12 @@ describe("Nowmal public demo", () => {
   it("searches across the domain model and opens a result in context", async () => {
     const user = userEvent.setup();
     renderApp();
-    const search = screen.getByRole("searchbox", { name: /Search everything/i });
+    const search = screen.getByRole("searchbox", { name: /Search tasks, people, or mail/i });
     await user.type(search, "Halyard");
 
     const result = screen.getByRole("button", { name: /Halyard still has not confirmed/i });
     await user.click(result);
-    expect(screen.getByRole("heading", { name: /What your inbox is actually asking/i })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /Every request, deadline, and follow-up/i })).toBeTruthy();
     expect(screen.getByText(/We should have the final number to you early next week/i)).toBeTruthy();
   });
 
@@ -55,8 +55,8 @@ describe("Nowmal public demo", () => {
     renderApp();
     const settings = screen.getByRole("navigation", { name: /Settings navigation/i });
     await user.click(within(settings).getByRole("button", { name: "Setup" }));
-    await user.click(screen.getByRole("button", { name: "Enable gated send" }));
-    expect(screen.getByRole("button", { name: "Gated send on" })).toBeTruthy();
-    expect(screen.getByText(/send a cleared Now draft/i)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Enable approved sends" }));
+    expect(screen.getByRole("button", { name: "Approved sends on" })).toBeTruthy();
+    expect(screen.getByText(/Send an approved draft/i)).toBeTruthy();
   });
 });

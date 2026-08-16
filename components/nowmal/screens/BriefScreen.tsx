@@ -11,11 +11,11 @@ export function BriefScreen() {
   return (
     <div className="screen">
       <div className="screen-inner-760">
-        <Eyebrow>Brief · Saturday 16 August, 09:00</Eyebrow>
-        <PageHeading>Six lines, then you can go.</PageHeading>
+        <Eyebrow>Brief · Sample update at 09:00</Eyebrow>
+        <PageHeading>The six things worth your attention.</PageHeading>
         <Lede>
-          Eve only writes this at your pull times. There is nothing to check in between, and
-          nothing here that can quietly send itself.
+          A concise summary of what changed, what is waiting, and where you made a commitment.
+          Nothing sends until you review and approve it.
         </Lede>
 
         <div className="brief-list">
@@ -34,7 +34,7 @@ export function BriefScreen() {
         <div className="brief-footer">
           <div>
             <ActionButton tone="solid" onClick={() => patch({ view: "now", briefRead: true })}>
-              Start the session
+              Review next actions
             </ActionButton>
             <ActionButton
               tone="ghost"
@@ -45,7 +45,7 @@ export function BriefScreen() {
             </ActionButton>
           </div>
           <span>
-            Next brief {state.pull === "live" ? "16:00 · live in between" : state.cadence}
+            Next brief {state.pull === "live" ? "at 16:00 · changes stay current" : `on the ${state.cadence} schedule`}
           </span>
         </div>
       </div>

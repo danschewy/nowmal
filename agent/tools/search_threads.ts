@@ -6,7 +6,7 @@ import { searchThreads } from "../../lib/data/repository";
 import { workspaceFromContext } from "../lib/context";
 
 export default defineTool({
-  description: "Search the indexed 90-day Gmail window. Use a narrow query and small limit.",
+  description: "Search the bounded Gmail index. Use a narrow query and small result limit.",
   inputSchema: z.object({ query: z.string().min(2).max(120), limit: z.number().int().min(1).max(50).default(20) }),
   async execute({ query, limit }, ctx) {
     const { workspaceId } = workspaceFromContext(ctx);

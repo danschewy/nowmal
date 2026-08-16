@@ -6,10 +6,10 @@ export default function AccountPage() {
   if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
     return (
       <main className="integration-wall">
-        <p className="integration-kicker">Nowmal · Gmail permission</p>
-        <h1>Clerk is not configured yet.</h1>
-        <p>Connect the external account first; the public demo does not need this permission.</p>
-        <div className="integration-actions"><Link href="/demo">Open the public demo</Link></div>
+        <p className="integration-kicker">Nowmal · Send access</p>
+        <h1>Send access is not available yet.</h1>
+        <p>You can still explore every approval step in the sample inbox without connecting an account.</p>
+        <div className="integration-actions"><Link href="/demo">Try the sample inbox</Link></div>
       </main>
     );
   }

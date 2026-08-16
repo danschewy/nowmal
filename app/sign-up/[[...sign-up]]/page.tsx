@@ -5,11 +5,11 @@ export default function SignUpPage() {
   if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
     return (
       <main className="integration-wall">
-        <p className="integration-kicker">Nowmal · Create account</p>
-        <h1>Clerk is not configured yet.</h1>
-        <p>The public demo is available now and does not require an account.</p>
+        <p className="integration-kicker">Nowmal · Connect Gmail</p>
+        <h1>Account connections are not available yet.</h1>
+        <p>You can explore the complete sample inbox now, with no account or Gmail access.</p>
         <div className="integration-actions">
-          <Link href="/demo">Open the public demo</Link>
+          <Link href="/demo">Try the sample inbox</Link>
         </div>
       </main>
     );

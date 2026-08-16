@@ -8,9 +8,9 @@ test.beforeEach(async ({ page }) => {
 
 test("public demo exposes the full task and Eve shell without an account", async ({ page }) => {
   await expect(page.getByText("Nowmal", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /What your inbox is actually asking/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Every request, deadline, and follow-up/i })).toBeVisible();
   await expect(page.getByLabel("Eve assistant")).toBeVisible();
-  await expect(page.getByText("PUBLIC DEMO · SEEDED")).toBeVisible();
+  await expect(page.getByText("SAMPLE INBOX · SAFE TO EXPLORE")).toBeVisible();
 
   await page.getByRole("button", { name: /Send Kestrel the two references/i }).click();
   await expect(page.getByText(/2 threads merged\. Deduped against the Aug 12 request/i)).toBeVisible();
@@ -25,5 +25,5 @@ test("Now requires the human gate before a send", async ({ page }) => {
   await page.getByRole("button", { name: /Both have agreed to be contacted/i }).click();
   await page.getByRole("button", { name: /Yes, both agreed/i }).click();
 
-  await expect(page.getByRole("button", { name: /Approve, send and close/i })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /Approve sample send/i })).toBeEnabled();
 });

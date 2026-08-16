@@ -13,15 +13,15 @@ export default async function WorkspacePage() {
   if (!userId) {
     return (
       <main className="integration-wall">
-        <p className="integration-kicker">Nowmal · Connected workspace</p>
-        <h1>Bring your own inbox.</h1>
+        <p className="integration-kicker">Nowmal · Your workspace</p>
+        <h1>Turn Gmail into a clear plan.</h1>
         <p>
-          The public demo needs no account. Connecting Gmail uses Clerk so the narrow Google
-          permissions stay attached to you.
+          Connect Google to find the tasks, commitments, and follow-ups in your recent mail.
+          Nowmal starts with read-only access; sending is separate and always requires approval.
         </p>
         <div className="integration-actions">
-        <Link href="/sign-up">Continue with Google</Link>
-          <Link href="/demo">Open the public demo</Link>
+          <Link href="/sign-up">Connect with Google</Link>
+          <Link href="/demo">Try the sample inbox</Link>
         </div>
       </main>
     );
@@ -35,14 +35,14 @@ export default async function WorkspacePage() {
 function MissingCredentials() {
   return (
     <main className="integration-wall">
-      <p className="integration-kicker">Nowmal · Connected workspace</p>
-      <h1>The product is ready for its keys.</h1>
+      <p className="integration-kicker">Nowmal · Your workspace</p>
+      <h1>The connected workspace is not available yet.</h1>
       <p>
-        Add Clerk, Neon, and Google OAuth credentials to activate the private workspace. The
-        complete product demo remains available without any account.
+        Account connections are still being configured. You can explore the complete sample
+        inbox now—no sign-in or Gmail access required.
       </p>
       <div className="integration-actions">
-        <Link href="/demo">Open the public demo</Link>
+        <Link href="/demo">Try the sample inbox</Link>
       </div>
     </main>
   );

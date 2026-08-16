@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { NowmalApp } from "@/components/nowmal/NowmalApp";
 
 export const metadata: Metadata = {
-  title: "Nowmal demo — no account needed",
-  description: "Explore the full Nowmal product with a realistic seeded inbox.",
+  title: "Try Nowmal — no account needed",
+  description: "Explore a complete sample inbox and see how Nowmal finds tasks, promises, and safe next actions.",
 };
 
 export default function DemoPage() {

@@ -7,17 +7,17 @@ import { Eyebrow, Lede, PageHeading, SectionLabel } from "../ui";
 export function RulesScreen() {
   const { state, patch } = useDemoStore();
   const learned = state.notTasks.length
-    ? [`Today · you called ${state.notTasks.length} inference wrong. Eve is looking for what they share.`, ...LEARNED]
+    ? [`Today · you corrected ${state.notTasks.length} task ${state.notTasks.length === 1 ? "suggestion" : "suggestions"}. Eve will use that feedback on similar mail.`, ...LEARNED]
     : LEARNED;
 
   return (
     <div className="screen">
       <div className="screen-inner-860">
-        <Eyebrow>Rules · what Eve is allowed to infer</Eyebrow>
-        <PageHeading>You decide how far Eve gets to go.</PageHeading>
+        <Eyebrow>Rules · your control over automation</Eyebrow>
+        <PageHeading>Choose what Eve can notice, suggest, or do.</PageHeading>
         <Lede>
-          Off means Eve never looks. Suggest means she writes it down and waits. Act means she
-          does it and tells you, with an undo. Sending has its own approval gate regardless.
+          Off ignores that pattern. Suggest shows you a recommendation first. Act applies the
+          change and gives you an undo. Sending always requires separate approval.
         </Lede>
 
         <div className="rule-list">
@@ -46,16 +46,16 @@ export function RulesScreen() {
             ))}
           </div>
           <small>
-            Corrections are the only training signal here.
-            <br />Nothing you write is used to train anything outside this account.
+            Corrections shape the suggestions and rules for this workspace.
+            <br />You can review the changes here at any time.
           </small>
         </section>
 
         <div className="rules-closing">
           <span />
           <p>
-            Clusters only become real after you accept them. Places to Live appeared on Aug 9,
-            after four letting agents in one week. A deleted cluster is never proposed again.
+            New mail groups require your approval. In this sample, Places to Live was suggested
+            after four letting agents appeared in one week. A dismissed group stays dismissed.
           </p>
         </div>
       </div>

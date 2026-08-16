@@ -36,14 +36,14 @@ export function StatusSquare({ status }: { status: "now" | "wait" | "later" | "d
 export function EmptyState({ onSetup }: { onSetup: () => void }) {
   return (
     <div className="empty-state">
-      <Eyebrow>Not connected</Eyebrow>
-      <h1>There is nothing here yet, and that is correct.</h1>
+      <Eyebrow>Your workspace is empty</Eyebrow>
+      <h1>Connect Gmail to see what needs your attention.</h1>
       <p>
-        Nowmal has nothing of its own. Every task, tracker and cluster in it is read out of your
-        mail. Connect the account and the first pass takes about a minute.
+        Nowmal starts with up to 100 threads from the last 30 days and turns them into tasks,
+        promises, and useful groups. The first connection is read-only; no email can be sent.
       </p>
       <ActionButton tone="solid" onClick={onSetup}>
-        Go to setup
+        Connect Gmail
       </ActionButton>
     </div>
   );

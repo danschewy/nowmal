@@ -6,13 +6,13 @@ const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(origin),
-  title: "Nowmal — a quiet layer over Gmail",
+  title: "Nowmal — Turn Gmail into a clear plan",
   description:
-    "Nowmal reads the work hiding in Gmail, keeps promises and tasks together, and makes every send pass through a human gate.",
+    "Nowmal finds tasks and promises in Gmail, groups related threads, and helps you reply with evidence and approval before every send.",
   openGraph: {
-    title: "Nowmal — a quiet layer over Gmail",
+    title: "Nowmal — Turn Gmail into a clear plan",
     description:
-      "Tasks, promises, trackers, and a human-gated Eve assistant over Gmail.",
+      "See what needs attention, why it matters, and what to do next—without giving up control of your inbox.",
     type: "website",
   },
 };

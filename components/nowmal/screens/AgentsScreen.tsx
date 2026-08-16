@@ -21,18 +21,17 @@ export function AgentsScreen({ mode }: { mode: "demo" | "connected" }) {
   return (
     <div className="screen">
       <div className="screen-inner-900">
-        <Eyebrow>Agents · model context protocol</Eyebrow>
-        <PageHeading>Other agents can work here. Same gates.</PageHeading>
+        <Eyebrow>Agents · MCP access</Eyebrow>
+        <PageHeading>Let other agents help without giving up control.</PageHeading>
         <Lede>
-          Nowmal exposes its durable Eve agent over MCP. The agent can inspect tasks, evidence and
-          indexed mail, prepare a draft, and request a send. A human approval still decides whether
-          that email leaves.
+          Connect an MCP client to inspect tasks and evidence, search indexed mail, and prepare
+          replies. Any sync or send request pauses for human approval before it can continue.
         </Lede>
 
         <section className="connection-card">
           <div><span>Endpoint</span><code>{endpoint}</code><ActionButton tone={state.copied ? "outline" : "solid"} onClick={copy}>{state.copied ? "Copied" : "Copy"}</ActionButton></div>
           <div><span>Auth</span><code>Vercel OIDC in production · local identity in development</code><span /></div>
-          <div><span>Transport</span><code>Streamable HTTP · every state-changing call remains gated</code><span /></div>
+          <div><span>Transport</span><code>Streamable HTTP · approval required for sensitive actions</code><span /></div>
         </section>
 
         <div className="agent-tool-list">
@@ -60,9 +59,8 @@ export function AgentsScreen({ mode }: { mode: "demo" | "connected" }) {
           <span />
           <p>
             {mode === "demo" ? "Tool switches here are a public policy preview; the connected workspace reads server policy.\n" : ""}
-            send_email only accepts a cleared Now draft and always parks for approval.
-            <br />An agent may answer evidence checks only when it supplies a citable source.
-            <br />The tone check and the approval stay with you.
+            <code>send_email</code> accepts only a reviewed Now draft and always pauses for approval.
+            <br />Evidence checks require a source. Tone and final approval always stay with you.
           </p>
         </div>
 
@@ -73,7 +71,7 @@ export function AgentsScreen({ mode }: { mode: "demo" | "connected" }) {
               <span className="revoked" />
               <div>
                 <strong>No external agent identities yet</strong>
-                <p>Same-project Vercel OIDC callers will appear here after deployment.</p>
+                <p>Authorized MCP clients will appear here after their first call.</p>
               </div>
               <small>0 calls</small>
               <span />

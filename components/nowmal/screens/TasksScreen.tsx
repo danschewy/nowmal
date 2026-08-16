@@ -1,6 +1,6 @@
 "use client";
 
-import { AGENT_TOOLS, COLLISION, EVE_SCRIPT, TASKS } from "@/lib/demo/data";
+import { COLLISION, EVE_SCRIPT, TASKS } from "@/lib/demo/data";
 import { useDemoStore, type TaskFilter } from "@/lib/demo/store";
 import type { Task, TaskStatus } from "@/lib/domain/types";
 import { ActionButton, Eyebrow, PageHeading, SectionLabel, StatusSquare } from "../ui";
@@ -107,7 +107,7 @@ export function TasksScreen() {
   return (
     <div className="screen">
       <div className="tasks-header">
-        <Eyebrow>Tasks · inferred, never typed</Eyebrow>
+        <Eyebrow>Tasks · found in your inbox</Eyebrow>
         <div className="pull-control">
           <div>
             <button
@@ -141,8 +141,8 @@ export function TasksScreen() {
           ) : null}
           <span className={state.pull === "live" ? "watching" : "paused"}>
             {state.pull === "live"
-              ? "Watching now · 3 threads since 09:00"
-              : `Paused · next pull ${
+              ? "Up to date · 3 changed threads since 09:00"
+              : `Updates paused · next check ${
                   state.cadence === "15 min"
                     ? "11:45"
                     : state.cadence === "Hourly"
@@ -153,7 +153,7 @@ export function TasksScreen() {
         </div>
       </div>
 
-      <PageHeading>What your inbox is actually asking you to do.</PageHeading>
+      <PageHeading>Every request, deadline, and follow-up in one place.</PageHeading>
       <div className="tasks-subline">
         {counts.now} need you · {counts.wait} waiting on someone else · {counts.later} later
       </div>
@@ -162,7 +162,7 @@ export function TasksScreen() {
         <section className="collision-card">
           <div className="collision-title">
             <span />
-            <strong>{COLLISION.day} is carrying two of the same favour</strong>
+            <strong>{COLLISION.day} needs the same two people twice</strong>
           </div>
           <div className="collision-rows">
             {COLLISION.rows.map(([who, what, why]) => (
@@ -301,9 +301,9 @@ export function TasksScreen() {
                       </div>
                     ) : null}
                     <p className="correction-note">
-                      Wrong inference? Not a task tells Eve, and she stops
+                      If this was not a real request, mark it Not a task. Eve will use the
                       <br />
-                      reading that shape of sentence as an ask.
+                      correction to avoid the same mistake next time.
                     </p>
                   </div>
                 </div>
@@ -314,8 +314,8 @@ export function TasksScreen() {
       </div>
 
       <p className="dedupe-note">
-        Eve read 41 threads to build this list and threw away 7 duplicates.
-        <br />A task never appears twice, even when the same ask arrives from three people.
+        Built from 41 threads · 7 duplicate asks merged.
+        <br />One request stays one task, even when it appears across several messages.
       </p>
     </div>
   );

@@ -1,6 +1,6 @@
 # Nowmal
 
-Nowmal is a quiet task and commitment layer over Gmail. It turns asks into tasks, the user's own commitments into promises, repeated processes into trackers, and related mail into clusters. Eve sits beside the workspace to explain evidence, prepare drafts, and—when separately enabled—request a tightly gated send.
+Nowmal turns Gmail into a clear plan. It finds requests, deadlines, and commitments; groups related conversations; and keeps repeated processes current. Eve explains why each item surfaced, prepares replies, and—when separately enabled—can request a send that still requires human approval.
 
 The full product demo is public at `/demo` and needs no account. `/workspace` is the private Clerk + Gmail + Neon path.
 

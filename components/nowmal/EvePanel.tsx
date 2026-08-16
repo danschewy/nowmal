@@ -31,7 +31,7 @@ function DemoEvePanel() {
           who: "Eve",
           text:
             scripted?.text ??
-            "I only have your mail to go on, and nothing in it speaks to that yet. I will flag it the moment something does.",
+            "I could not find anything in this sample inbox that answers that. Try asking about a task, promise, person, or thread.",
           draft: scripted?.draft,
         },
       ],
@@ -42,7 +42,7 @@ function DemoEvePanel() {
   };
 
   return (
-    <PanelFrame status="Reading the seeded inbox">
+    <PanelFrame status="Ready with sample mail">
       <div className="eve-messages" ref={scrollRef} aria-live="polite">
         {state.messages.map((message) => (
           <article key={message.id} className={`eve-message ${message.who === "You" ? "from-you" : ""}`}>
@@ -74,7 +74,7 @@ function ConnectedEvePanel() {
     onError: (error) => notify(error.message),
   });
   const busy = agent.status === "submitted" || agent.status === "streaming";
-  const chips = ["List what needs me", "What is waiting?", "Refresh Gmail"];
+  const chips = ["What needs my attention?", "What am I waiting on?", "Check for new mail"];
 
   useAutoScroll(scrollRef, agent.events.length);
 
@@ -88,14 +88,14 @@ function ConnectedEvePanel() {
   };
 
   return (
-    <PanelFrame status={busy ? "Working durably" : state.connected ? "Connected to indexed mail" : "Waiting for Gmail"}>
+    <PanelFrame status={busy ? "Working" : state.connected ? "Ready with your recent mail" : "Connect Gmail to begin"}>
       <div className="eve-messages" ref={scrollRef} aria-live="polite">
         {!agent.data.messages.length ? (
           <article className="eve-message">
             <div>Eve</div>
             <p>
-              Ask about indexed mail or request a draft. Sync and send calls stop for approval;
-              sending also requires a cleared Now draft and the separate Gmail permission.
+              Ask what needs attention, search recent mail, or request a reply. I will show my
+              sources, and I will stop for your approval before any sync or send.
             </p>
           </article>
         ) : null}
@@ -250,12 +250,12 @@ function Composer({
       >
         <input
           aria-label="Ask Eve about your inbox"
-          placeholder={disabled ? "Connect Gmail to ask Eve" : "Ask about your inbox"}
+          placeholder={disabled ? "Connect Gmail to ask Eve" : "Ask about tasks, people, or mail"}
           value={value}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
         />
-        <button type="submit" disabled={disabled || !value.trim()}>Send</button>
+        <button type="submit" disabled={disabled || !value.trim()}>Ask</button>
       </form>
     </div>
   );
