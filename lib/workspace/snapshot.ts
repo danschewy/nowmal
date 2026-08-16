@@ -43,6 +43,7 @@ export interface WorkspaceDraftSummary {
 export interface WorkspaceSnapshot {
   connected: boolean;
   threadCount: number;
+  correctionCount: number;
   sendEnabled: boolean;
   lastSyncedAt: string | null;
   eveSessionId: string | null;

@@ -6,7 +6,11 @@ import { EvePanel } from "./EvePanel";
 import { SearchScreen } from "./SearchScreen";
 import { Toast } from "./Toast";
 import { EmptyState } from "./ui";
-import { ConnectedSearchScreen, ConnectedWorkspaceScreen } from "./ConnectedWorkspaceScreen";
+import {
+  ConnectedRulesScreen,
+  ConnectedSearchScreen,
+  ConnectedWorkspaceScreen,
+} from "./ConnectedWorkspaceScreen";
 import { WorkspaceDataProvider, useWorkspaceData } from "./WorkspaceData";
 import { AgentsScreen } from "./screens/AgentsScreen";
 import { BriefScreen } from "./screens/BriefScreen";
@@ -84,6 +88,9 @@ function CurrentScreen({
   accountEmail: string;
 }) {
   const { state } = useDemoStore();
+  if (mode === "connected" && state.view === "rules") {
+    return <ConnectedRulesScreen />;
+  }
   if (
     mode === "connected" &&
     (["brief", "now", "tasks", "promises", "pipeline", "mail"] as const).includes(

@@ -77,6 +77,7 @@ describe("Nowmal connected workspace", () => {
           JSON.stringify({
             connected: true,
             threadCount: 1,
+            correctionCount: 0,
             sendEnabled: false,
             lastSyncedAt: "2026-08-16T12:00:00.000Z",
             eveSessionId: null,
@@ -142,6 +143,7 @@ describe("Nowmal connected workspace", () => {
           JSON.stringify({
             connected: true,
             threadCount: 1,
+            correctionCount: 0,
             sendEnabled: false,
             lastSyncedAt: "2026-08-16T12:00:00.000Z",
             eveSessionId: null,
@@ -178,5 +180,112 @@ describe("Nowmal connected workspace", () => {
       "/api/gmail/sync",
       expect.anything(),
     );
+  });
+
+  it("shows enforced connected policy instead of sample-only rule claims", async () => {
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      "nowmal.connected.v1",
+      JSON.stringify({ connected: true, threadCount: 3, view: "rules" }),
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            connected: true,
+            threadCount: 3,
+            correctionCount: 2,
+            sendEnabled: false,
+            lastSyncedAt: "2026-08-16T12:00:00.000Z",
+            eveSessionId: null,
+            analysis: {
+              version: "tasks-promises-v1",
+              analyzedThreadCount: 3,
+              pendingThreadCount: 0,
+              workItemCount: 1,
+            },
+            workItems: [],
+            drafts: [],
+            threads: [],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      ),
+    );
+
+    render(<NowmalApp mode="connected" accountEmail="owner@example.com" />);
+
+    expect(await screen.findByRole("heading", { name: "See exactly what Nowmal may do." })).toBeTruthy();
+    expect(screen.getByText("2 corrections are preserved for this workspace.")).toBeTruthy();
+    expect(screen.queryByText(/In this sample/i)).toBeNull();
+  });
+
+  it("groups only repeated source-backed workstreams in the connected tracker view", async () => {
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      "nowmal.connected.v1",
+      JSON.stringify({ connected: true, threadCount: 2, view: "pipeline" }),
+    );
+    const evidence = (suffix: string) => ({
+      quote: `Exact source quote ${suffix}`,
+      gmailMessageId: `message-${suffix}`,
+      gmailThreadId: `thread-${suffix}`,
+      subject: `Source ${suffix}`,
+      sender: "person@example.com",
+      sentAt: "2026-08-16T12:00:00.000Z",
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            connected: true,
+            threadCount: 2,
+            correctionCount: 0,
+            sendEnabled: false,
+            lastSyncedAt: "2026-08-16T12:00:00.000Z",
+            eveSessionId: null,
+            analysis: {
+              version: "tasks-promises-v1",
+              analyzedThreadCount: 2,
+              pendingThreadCount: 0,
+              workItemCount: 2,
+            },
+            workItems: [
+              {
+                id: "item-1",
+                kind: "task",
+                status: "needs_you",
+                title: "Send the requested document",
+                dueAt: null,
+                confidence: 0.91,
+                metadata: { counterparty: "Northline", sourceThreadCount: 1 },
+                evidence: [evidence("one")],
+              },
+              {
+                id: "item-2",
+                kind: "promise",
+                status: "waiting",
+                title: "Follow up on the review",
+                dueAt: null,
+                confidence: 0.88,
+                metadata: { counterparty: "Northline", sourceThreadCount: 1 },
+                evidence: [evidence("two")],
+              },
+            ],
+            drafts: [],
+            threads: [],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      ),
+    );
+
+    render(<NowmalApp mode="connected" accountEmail="owner@example.com" />);
+
+    expect(await screen.findByRole("heading", { name: "1 repeated workstream." })).toBeTruthy();
+    expect(screen.getByText("Northline")).toBeTruthy();
+    expect(screen.getByText("2 source threads")).toBeTruthy();
   });
 });

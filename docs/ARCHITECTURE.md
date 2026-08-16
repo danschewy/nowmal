@@ -88,6 +88,18 @@ The deterministic key combines analysis version, item kind, normalized counterpa
 - Clusters, trackers, and their entries have stable per-workspace keys so renames do not change identity.
 - Eve session IDs are stored separately from product records; agent conversation retention does not determine mailbox retention.
 
+The connected Trackers view intentionally starts one level below a guessed pipeline. It groups only
+when two obligations share the same normalized counterparty or when one obligation already has evidence
+from several Gmail threads. Those workstreams are computed from the bounded workspace snapshot, so the
+view adds no mailbox query. The snapshot's connection, counts, session, threads, work items, evidence,
+corrections, and drafts are issued as one Neon HTTP batch rather than a waterfall. Formal named trackers
+remain normalized in `trackers` and `tracker_entries`; they should be created only after a real repeated
+process supplies defensible stages.
+
+Connected Rules is a policy report, not a set of decorative client toggles. It describes the server
+boundaries that actually exist and reads the workspace's append-only correction count. The public
+demo keeps interactive rule switches because it is explicitly a reversible product simulation.
+
 ## Send correctness
 
 `send_email` is intentionally stricter than an ordinary Gmail wrapper:

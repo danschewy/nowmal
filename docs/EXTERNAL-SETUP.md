@@ -15,14 +15,29 @@ Gmail mailbox scopes can require Google OAuth verification before a public produ
 
 ## 2. Neon
 
-1. Create a Neon project and copy its pooled connection string to `DATABASE_URL`.
-2. Apply the checked-in migration:
+Keep Neon inside the Vercel project rather than provisioning or wiring it separately:
+
+1. In the Nowmal Vercel project, open **Storage**, choose **Create Database**, and install the
+   [Neon native Marketplace integration](https://vercel.com/marketplace/neon). Use the
+   Vercel-managed **Create New Neon Account** mode so the resource, connection, and billing stay
+   visible in Vercel.
+2. Connect the database to the Nowmal project and verify that the integration injected
+   `DATABASE_URL` for Production and Preview. Vercel documents this automatic credential wiring
+   in [Marketplace Storage](https://vercel.com/docs/marketplace-storage).
+3. Keep the database region close to the Vercel Functions region and use the pooled connection
+   supplied by the integration.
+4. Apply the checked-in migration against the intended environment:
 
    ```bash
    npm run db:migrate
    ```
 
-3. Use separate Neon branches for preview and production Vercel environments.
+5. Leave preview branching enabled in the Neon integration so preview deployments do not mutate
+   production data. Remove stale preview branches when they are no longer useful.
+
+Do not copy a separately created Neon URL into Vercel unless deliberately migrating away from the
+managed integration. The manual path exists, but Neon recommends the managed integration for the
+minimal Vercel setup used here.
 
 ## 3. Vercel and Eve
 

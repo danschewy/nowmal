@@ -1371,6 +1371,20 @@ a.action-button {
 .rule-control button { padding: 9px 4px; border: 0; border-left: 1px solid var(--hairline); background: transparent; color: var(--ink-mute); cursor: pointer; font-family: var(--machine); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; }
 .rule-control button:first-child { border-left: 0; }
 .rule-control button.active { background: var(--ink); color: var(--bone); }
+.connected-policy-list article { grid-template-columns: minmax(0, 1fr) 150px; }
+.policy-value {
+  justify-self: end;
+  min-width: 132px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--machine);
+  font-size: 9px;
+  letter-spacing: .11em;
+  text-align: center;
+  text-transform: uppercase;
+}
 .learned-section { margin-top: 48px; }
 .learned-section > div { margin-top: 4px; }
 .learned-section p { display: grid; grid-template-columns: 14px 1fr; gap: 12px; margin: 0; padding: 12px 2px; border-bottom: 1px solid var(--hairline); font-family: var(--machine); font-size: 10px; line-height: 1.7; }
@@ -1480,6 +1494,69 @@ a.action-button {
 .connected-empty h1 {
   font-size: 38px;
 }
+
+.connected-workstreams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 34px;
+}
+
+.connected-workstreams > article {
+  border: 1px solid var(--hairline);
+  background: var(--paper);
+}
+
+.connected-workstreams header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.connected-workstreams header div { display: grid; gap: 5px; }
+.connected-workstreams header strong { font-size: 18px; font-weight: 500; }
+.connected-workstreams header small,
+.connected-workstreams header > span,
+.workstream-stats,
+.connected-workstreams li small {
+  color: var(--ink-mute);
+  font-family: var(--machine);
+  font-size: 8px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.workstream-stats {
+  display: flex;
+  gap: 14px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.connected-workstreams ul { margin: 0; padding: 0; list-style: none; }
+.connected-workstreams li {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  gap: 11px;
+  align-items: start;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.connected-workstreams li:last-child { border-bottom: 0; }
+.connected-workstreams li .status-square { margin-top: 3px; }
+.connected-workstreams li button {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.connected-workstreams li button > span { font-size: 13px; line-height: 1.35; }
 
 .connected-task-list {
   margin-top: 30px;

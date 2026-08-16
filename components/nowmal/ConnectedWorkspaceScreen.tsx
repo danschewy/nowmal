@@ -35,6 +35,84 @@ export function ConnectedWorkspaceScreen({
   }
 }
 
+export function ConnectedRulesScreen() {
+  const { snapshot } = useWorkspaceData();
+  const corrections = snapshot?.correctionCount ?? 0;
+  const analyzed = snapshot?.analysis.analyzedThreadCount ?? 0;
+  const policies = [
+    {
+      label: "Index recent Gmail",
+      description: "Runs only when you connect or refresh. The first pass is capped at 100 threads from 30 days; later passes ask Gmail only for changes.",
+      value: "You choose",
+    },
+    {
+      label: "Find tasks and promises",
+      description: "Runs only when you request analysis. A result is saved only above the confidence floor and with an exact quote from the bounded index.",
+      value: "Suggest",
+    },
+    {
+      label: "Merge duplicate obligations",
+      description: "Uses a stable intent, counterparty, kind, and occurrence key. Every supporting source thread stays attached to the one resulting item.",
+      value: "Automatic",
+    },
+    {
+      label: "Keep your corrections",
+      description: "Done and incorrect decisions are stored separately from model output, so a later analysis cannot silently undo them.",
+      value: "Preserved",
+    },
+    {
+      label: "Prepare replies",
+      description: "Eve may queue a draft and its unresolved checks. A draft has no permission to leave Nowmal.",
+      value: "Suggest",
+    },
+    {
+      label: "Send email",
+      description: "Requires separate Google send access, a cleared draft, and fresh approval for that exact send. Ambiguous attempts are never retried automatically.",
+      value: snapshot?.sendEnabled ? "Approval only" : "Off",
+    },
+  ];
+
+  return (
+    <div className="screen">
+      <div className="screen-inner-860">
+        <Eyebrow>Rules · enforced workspace policy</Eyebrow>
+        <PageHeading>See exactly what Nowmal may do.</PageHeading>
+        <Lede>
+          These are the connected workspace&apos;s real server boundaries—not sample switches.
+          Reading, analysis, drafting, and sending remain separate actions.
+        </Lede>
+
+        <div className="rule-list connected-policy-list">
+          {policies.map((policy) => (
+            <article key={policy.label}>
+              <div><strong>{policy.label}</strong><p>{policy.description}</p></div>
+              <div className="policy-value">{policy.value}</div>
+            </article>
+          ))}
+        </div>
+
+        <section className="learned-section">
+          <SectionLabel>Workspace record</SectionLabel>
+          <div>
+            <p><span className={analyzed ? "live" : ""} />{analyzed.toLocaleString()} indexed {analyzed === 1 ? "thread has" : "threads have"} passed the current evidence checks.</p>
+            <p><span className={corrections ? "live" : ""} />{corrections ? `${corrections.toLocaleString()} ${corrections === 1 ? "correction is" : "corrections are"} preserved for this workspace.` : "No task or promise corrections have been recorded yet."}</p>
+            <p><span className={snapshot?.sendEnabled ? "live" : ""} />Approved-send access is {snapshot?.sendEnabled ? "available behind the per-send gate" : "off"}.</p>
+          </div>
+          <small>
+            Nowmal records decisions; it does not claim to learn a new behavior until that
+            behavior has a real, reviewable effect.
+          </small>
+        </section>
+
+        <div className="rules-closing">
+          <span />
+          <p>Server policy is deliberately conservative. Sending never becomes an automatic rule.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ConnectedSearchScreen() {
   const { snapshot } = useWorkspaceData();
   const { state, patch } = useDemoStore();
@@ -308,13 +386,58 @@ function ConnectedDraft({ draft }: { draft: WorkspaceDraftSummary }) {
 }
 
 function ConnectedTrackersScreen() {
+  const { snapshot } = useWorkspaceData();
+  const { patch } = useDemoStore();
+  const items = (snapshot?.workItems ?? []).filter((item) => item.status !== "incorrect");
+  const grouped = groupWorkstreams(items);
+
   return (
     <div className="screen">
-      <Eyebrow>Trackers · your connected workspace</Eyebrow>
-      <ConnectedEmpty
-        title="No trackers yet"
-        body="Trackers will appear only after a repeated multi-thread process has been identified and you accept it."
-      />
+      <Eyebrow>Trackers · repeated workstreams</Eyebrow>
+      <PageHeading>{grouped.length ? `${grouped.length} repeated ${grouped.length === 1 ? "workstream" : "workstreams"}.` : "No repeated workstream yet."}</PageHeading>
+      <Lede>
+        Nowmal groups the same counterparty across obligations and source threads. It will not
+        invent a pipeline or stage from a single conversation.
+      </Lede>
+      {!items.length ? (
+        <ConnectedEmpty
+          title="Nothing to group yet"
+          body={snapshot?.analysis.pendingThreadCount
+            ? "The bounded Gmail index still needs analysis. Tasks and promises must exist before Nowmal can find a repeated workstream."
+            : "The current evidence did not support a repeated process."}
+        />
+      ) : !grouped.length ? (
+        <ConnectedEmpty
+          title={`${items.length} ${items.length === 1 ? "item is" : "items are"} still independent`}
+          body="A workstream appears only when at least two obligations share a stable counterparty or one obligation is supported by several threads."
+        />
+      ) : (
+        <div className="connected-workstreams">
+          {grouped.map((group) => (
+            <article key={group.key}>
+              <header>
+                <div><strong>{group.name}</strong><small>{group.threadCount} source {group.threadCount === 1 ? "thread" : "threads"}</small></div>
+                <span>{group.openCount} open</span>
+              </header>
+              <div className="workstream-stats">
+                <span>{group.tasks} {group.tasks === 1 ? "task" : "tasks"}</span>
+                <span>{group.promises} {group.promises === 1 ? "promise" : "promises"}</span>
+                <span>{group.done} done</span>
+              </div>
+              <ul>
+                {group.items.slice(0, 4).map((item) => (
+                  <li key={item.id}>
+                    <StatusSquare status={statusSquare(item.status)} />
+                    <button type="button" onClick={() => patch({ view: item.kind === "task" ? "tasks" : "promises", openTaskId: item.kind === "task" ? item.id : null })}>
+                      <span>{item.title}</span><small>{itemStatusLabel(item.status)} · {formatDue(item.dueAt)}</small>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -430,4 +553,48 @@ function formatMetadata(value: unknown) {
   if (Array.isArray(value)) return value.map(String).join(", ");
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
+}
+
+function groupWorkstreams(items: WorkspaceWorkItemSummary[]) {
+  const groups = new Map<string, WorkspaceWorkItemSummary[]>();
+  for (const item of items) {
+    const raw = typeof item.metadata.counterparty === "string"
+      ? item.metadata.counterparty.trim()
+      : "";
+    if (!raw) continue;
+    const key = raw.toLocaleLowerCase();
+    const group = groups.get(key) ?? [];
+    group.push(item);
+    groups.set(key, group);
+  }
+
+  return [...groups.entries()]
+    .map(([key, groupItems]) => {
+      const sourceThreads = new Set(
+        groupItems.flatMap((item) => item.evidence.map((evidence) => evidence.gmailThreadId)),
+      );
+      const metadataThreadCount = Math.max(
+        0,
+        ...groupItems.map((item) => typeof item.metadata.sourceThreadCount === "number" ? item.metadata.sourceThreadCount : 0),
+      );
+      const threadCount = Math.max(sourceThreads.size, metadataThreadCount);
+      const repeated = groupItems.length > 1 || threadCount > 1;
+      return {
+        key,
+        name: String(groupItems[0].metadata.counterparty),
+        items: [...groupItems].sort((left, right) => {
+          const leftDone = left.status === "done" ? 1 : 0;
+          const rightDone = right.status === "done" ? 1 : 0;
+          return leftDone - rightDone;
+        }),
+        threadCount,
+        repeated,
+        openCount: groupItems.filter((item) => item.status !== "done").length,
+        tasks: groupItems.filter((item) => item.kind === "task").length,
+        promises: groupItems.filter((item) => item.kind === "promise").length,
+        done: groupItems.filter((item) => item.status === "done").length,
+      };
+    })
+    .filter((group) => group.repeated)
+    .sort((left, right) => right.openCount - left.openCount || right.threadCount - left.threadCount);
 }

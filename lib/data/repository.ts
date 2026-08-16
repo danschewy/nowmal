@@ -203,15 +203,6 @@ export async function getAgentSessionOwner(eveSessionId: string) {
   return owner?.workspaceId ?? null;
 }
 
-export async function getWorkspaceAgentSession(workspaceId: string) {
-  const db = getDb();
-  const session = await db.query.agentSessions.findFirst({
-    where: eq(agentSessions.workspaceId, workspaceId),
-    orderBy: desc(agentSessions.updatedAt),
-  });
-  return session?.eveSessionId ?? null;
-}
-
 export async function getThreadsForAnalysis(workspaceId: string, limit: number) {
   const db = getDb();
   const safeLimit = Math.max(1, Math.min(limit, 100));
@@ -379,11 +370,18 @@ export async function markThreadsAnalyzed(workspaceId: string, threadRows: Analy
 
 export async function getWorkspaceSnapshot(workspaceId: string): Promise<WorkspaceSnapshot> {
   const db = getDb();
-  const [connection, eveSessionId, counts, itemCounts, threadRows, itemRows, evidenceRows, draftRows] = await Promise.all([
-    db.query.mailboxConnections.findFirst({
-      where: eq(mailboxConnections.workspaceId, workspaceId),
-    }),
-    getWorkspaceAgentSession(workspaceId),
+  const [connectionRows, sessionRows, counts, itemCounts, correctionCounts, threadRows, itemRows, evidenceRows, draftRows] = await db.batch([
+    db
+      .select()
+      .from(mailboxConnections)
+      .where(eq(mailboxConnections.workspaceId, workspaceId))
+      .limit(1),
+    db
+      .select({ eveSessionId: agentSessions.eveSessionId })
+      .from(agentSessions)
+      .where(eq(agentSessions.workspaceId, workspaceId))
+      .orderBy(desc(agentSessions.updatedAt))
+      .limit(1),
     db
       .select({
         count: sql<number>`count(*)::int`,
@@ -395,6 +393,10 @@ export async function getWorkspaceSnapshot(workspaceId: string): Promise<Workspa
       .select({ count: sql<number>`count(*)::int` })
       .from(workItems)
       .where(eq(workItems.workspaceId, workspaceId)),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(userCorrections)
+      .where(eq(userCorrections.workspaceId, workspaceId)),
     db
       .select({
         id: threads.id,
@@ -456,6 +458,8 @@ export async function getWorkspaceSnapshot(workspaceId: string): Promise<Workspa
       .orderBy(desc(nowDrafts.createdAt))
       .limit(50),
   ]);
+  const connection = connectionRows[0] ?? null;
+  const eveSessionId = sessionRows[0]?.eveSessionId ?? null;
 
   const evidenceByItem = new Map<string, WorkspaceSnapshot["workItems"][number]["evidence"]>();
   for (const evidence of evidenceRows) {
@@ -474,6 +478,7 @@ export async function getWorkspaceSnapshot(workspaceId: string): Promise<Workspa
   return {
     connected: Boolean(connection),
     threadCount: counts[0]?.count ?? 0,
+    correctionCount: correctionCounts[0]?.count ?? 0,
     sendEnabled: connection?.sendEnabled ?? false,
     lastSyncedAt: connection?.lastSyncedAt?.toISOString() ?? null,
     eveSessionId,

@@ -14,6 +14,21 @@ export const metadata: Metadata = {
     description:
       "See what needs attention, why it matters, and what to do next—without giving up control of your inbox.",
     type: "website",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Nowmal — Turn Gmail into a clear plan. Evidence before action.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Nowmal — Turn Gmail into a clear plan",
+    description:
+      "See what needs attention, why it matters, and what to do next—without giving up control of your inbox.",
+    images: ["/og.png"],
   },
 };
 

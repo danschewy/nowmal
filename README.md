@@ -15,6 +15,8 @@ The full product demo is public at `/demo` and needs no account. `/workspace` is
 - Clerk route identity and Google OAuth token brokerage.
 - Conservative initial Gmail sync (at most 100 threads from 30 days) and efficient incremental sync with Gmail `historyId` cursors.
 - An authenticated, bounded workspace snapshot that renders real indexed threads, work items, drafts, counts, and search results without ever falling back to public sample records.
+- A truthful connected policy screen that reports enforced server behavior and correction counts rather than reusing sample-only automation switches.
+- Source-backed workstream grouping that promotes only repeated counterparties or multi-thread obligations and refuses to invent pipeline stages from a single conversation.
 - Bounded AI analysis of the stored index in 16-thread batches, with prompt-injection isolation, exact-quote validation, deterministic dedupe keys, incremental re-analysis, and append-only user corrections.
 - A normalized Neon/Drizzle data model and checked-in migration.
 - A `send_email` tool protected by Eve's durable `always()` approval, separate `gmail.send` consent, cleared-draft checks, a stable idempotency key, and an append-only audit record.
@@ -44,7 +46,9 @@ npm run eve:info
 
 ## Connected workspace
 
-Copy `.env.example` to `.env.local` and provide Clerk and Neon credentials. Then apply the checked-in migration:
+Copy `.env.example` to `.env.local` and provide Clerk credentials. Provision Neon through the
+Vercel project's native Marketplace storage integration; it owns and injects `DATABASE_URL`.
+Pull that environment for local connected-workspace development, then apply the checked-in migration:
 
 ```bash
 npm run db:migrate
