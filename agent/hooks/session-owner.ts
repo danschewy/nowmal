@@ -1,6 +1,7 @@
 import { defineHook } from "eve/hooks";
 import { isDatabaseConfigured } from "../../lib/data/client";
 import { recordAgentSession } from "../../lib/data/repository";
+import { durableAgentSessionSurface } from "../../lib/eve/session-surface";
 
 export default defineHook({
   events: {
@@ -9,7 +10,7 @@ export default defineHook({
       if (!principal || principal.principalType !== "user" || !isDatabaseConfigured()) return;
       await recordAgentSession({
         workspaceId: principal.principalId,
-        surface: ctx.channel.kind ?? "eve",
+        surface: durableAgentSessionSurface(ctx.channel.kind),
         eveSessionId: ctx.session.id,
       });
     },

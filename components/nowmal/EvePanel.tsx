@@ -106,13 +106,13 @@ function ConnectedEvePanel({ initialSessionId }: { initialSessionId: string | nu
   };
 
   return (
-    <PanelFrame status={busy ? "Working" : state.connected ? "Ready with your recent mail" : "Connect Gmail to begin"}>
+    <PanelFrame status={busy ? "Working" : state.connected ? "Ready with your indexed mail" : "Connect Gmail to begin"}>
       <div className="eve-messages" ref={scrollRef} aria-live="polite">
         {!agent.data.messages.length ? (
           <article className="eve-message">
             <div>Eve</div>
             <p>
-              Ask what needs attention, search recent mail, or request a reply. I will show my
+              Ask what needs attention, search your indexed mail, or request a reply. I will show my
               sources, and I will stop for your approval before any sync or send.
             </p>
           </article>

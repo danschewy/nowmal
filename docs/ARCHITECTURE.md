@@ -26,7 +26,7 @@ The private assistant panel uses Eve's `useEveAgent` client on the same origin. 
 turns and renders approval requests in place, so the approval shown beside a proposed send is the
 actual Eve input request—not a second client-only confirmation.
 
-Eve route authentication and Eve session ownership are separate boundaries. Clerk verifies every browser request. A `session.started` hook records the authenticated owner and session ID in Neon; every later ID-addressed message, stream, cancel, compact, clear, or reset request must match that owner. The workspace snapshot returns only the caller's latest mapped session, and the React client resumes its stream from the beginning after reload. Unknown and cross-account session IDs fail closed.
+Eve route authentication and Eve session ownership are separate boundaries. Clerk verifies every browser request. A `session.started` hook records the authenticated owner and session ID in Neon; every later ID-addressed message, stream, cancel, compact, clear, or reset request must match that owner. Browser sessions are stored under an explicit agent-generation surface. The workspace snapshot resumes only the caller's current-generation browser session, never an MCP session or a session created against an incompatible tool manifest. Bumping that generation starts one clean conversation without deleting mailbox state or weakening ownership checks. Unknown and cross-account session IDs fail closed.
 
 ## Decisions
 
@@ -64,7 +64,7 @@ Gmail threads and messages are normalized. Tasks can cite several threads throug
 
 ## Gmail ingestion
 
-The initial pull uses Gmail's search query `newer_than:30d`, stops after 100 thread IDs, and hydrates at concurrency 8. It stores one normalized thread and upserts messages by `(workspace_id, gmail_message_id)`.
+The initial pull uses Gmail's search query `newer_than:30d`, stops after 300 thread IDs, and hydrates at concurrency 8. It stores one normalized thread and upserts messages by `(workspace_id, gmail_message_id)`.
 
 Later pulls use the mailbox's Gmail `historyId` and request only `messageAdded` changes. An expired history cursor returns 404; the safe recovery is the same bounded 30-day rebuild. Search text is materialized once per thread and GIN-indexed, so search does not repeatedly concatenate messages.
 

@@ -16,6 +16,7 @@ import {
 } from "./schema";
 import type { WorkspaceSnapshot } from "@/lib/workspace/snapshot";
 import { WORKSPACE_ANALYSIS_VERSION } from "@/lib/workspace/analysis-contract";
+import { EVE_WEB_SESSION_SURFACE } from "@/lib/eve/session-surface";
 
 export interface GmailThreadRecord {
   gmailThreadId: string;
@@ -379,8 +380,12 @@ export async function getWorkspaceSnapshot(workspaceId: string): Promise<Workspa
     db
       .select({ eveSessionId: agentSessions.eveSessionId })
       .from(agentSessions)
-      .where(eq(agentSessions.workspaceId, workspaceId))
-      .orderBy(desc(agentSessions.updatedAt))
+      .where(
+        and(
+          eq(agentSessions.workspaceId, workspaceId),
+          eq(agentSessions.surface, EVE_WEB_SESSION_SURFACE),
+        ),
+      )
       .limit(1),
     db
       .select({
