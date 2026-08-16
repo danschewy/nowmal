@@ -76,6 +76,7 @@ describe("Nowmal connected workspace", () => {
         new Response(
           JSON.stringify({
             connected: true,
+            mailboxStatus: "connected",
             threadCount: 1,
             correctionCount: 0,
             sendEnabled: false,
@@ -148,6 +149,7 @@ describe("Nowmal connected workspace", () => {
         return new Response(
           JSON.stringify({
             connected: true,
+            mailboxStatus: "connected",
             threadCount: 1,
             correctionCount: 0,
             sendEnabled: false,
@@ -201,6 +203,7 @@ describe("Nowmal connected workspace", () => {
         new Response(
           JSON.stringify({
             connected: true,
+            mailboxStatus: "connected",
             threadCount: 3,
             correctionCount: 2,
             sendEnabled: false,
@@ -248,6 +251,7 @@ describe("Nowmal connected workspace", () => {
         new Response(
           JSON.stringify({
             connected: true,
+            mailboxStatus: "connected",
             threadCount: 2,
             correctionCount: 0,
             sendEnabled: false,
@@ -294,5 +298,58 @@ describe("Nowmal connected workspace", () => {
     expect(await screen.findByRole("heading", { name: "1 repeated workstream." })).toBeTruthy();
     expect(screen.getByText("Northline")).toBeTruthy();
     expect(screen.getByText("2 source threads")).toBeTruthy();
+  });
+
+  it("keeps the index available while asking for revoked Gmail access to be reviewed", async () => {
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      "nowmal.connected.v1",
+      JSON.stringify({ connected: true, threadCount: 12, view: "setup" }),
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        if (String(input) === "/api/gmail/status") {
+          return new Response(
+            JSON.stringify({
+              connected: true,
+              permissionStatus: "current",
+              readAuthorized: false,
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
+        }
+        return new Response(
+          JSON.stringify({
+            connected: true,
+            mailboxStatus: "reauthorization_required",
+            threadCount: 12,
+            correctionCount: 1,
+            sendEnabled: false,
+            lastSyncedAt: "2026-08-16T12:00:00.000Z",
+            eveSessionId: null,
+            analysis: {
+              version: "tasks-promises-v1",
+              analyzedThreadCount: 4,
+              pendingThreadCount: 8,
+              workItemCount: 2,
+            },
+            workItems: [],
+            drafts: [],
+            threads: [],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }),
+    );
+
+    render(<NowmalApp mode="connected" accountEmail="owner@example.com" />);
+
+    expect(await screen.findByRole("heading", { name: "Reconnect Gmail without losing your workspace." })).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Review Gmail access" }).getAttribute("href"),
+    ).toBe("/account");
+    expect(screen.getByText(/12 indexed threads are still available/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Find tasks & promises" })).toBeTruthy();
   });
 });

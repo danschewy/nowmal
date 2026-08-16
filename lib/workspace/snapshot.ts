@@ -42,6 +42,7 @@ export interface WorkspaceDraftSummary {
 
 export interface WorkspaceSnapshot {
   connected: boolean;
+  mailboxStatus: "connected" | "reauthorization_required" | "disconnected";
   threadCount: number;
   correctionCount: number;
   sendEnabled: boolean;

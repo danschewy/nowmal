@@ -43,7 +43,7 @@ export function ConnectedRulesScreen() {
     {
       label: "Index recent Gmail",
       description: "Runs only when you connect or refresh. The first pass is capped at 100 threads from 30 days; later passes ask Gmail only for changes.",
-      value: "You choose",
+      value: snapshot?.mailboxStatus === "reauthorization_required" ? "Review access" : "You choose",
     },
     {
       label: "Find tasks and promises",
@@ -97,6 +97,7 @@ export function ConnectedRulesScreen() {
             <p><span className={analyzed ? "live" : ""} />{analyzed.toLocaleString()} indexed {analyzed === 1 ? "thread has" : "threads have"} passed the current evidence checks.</p>
             <p><span className={corrections ? "live" : ""} />{corrections ? `${corrections.toLocaleString()} ${corrections === 1 ? "correction is" : "corrections are"} preserved for this workspace.` : "No task or promise corrections have been recorded yet."}</p>
             <p><span className={snapshot?.sendEnabled ? "live" : ""} />Approved-send access is {snapshot?.sendEnabled ? "available behind the per-send gate" : "off"}.</p>
+            <p><span className={snapshot?.mailboxStatus === "connected" ? "live" : ""} />Google read access is {snapshot?.mailboxStatus === "reauthorization_required" ? "ready to reconnect; the existing index is retained" : snapshot?.mailboxStatus === "connected" ? "current" : "not connected"}.</p>
           </div>
           <small>
             Nowmal records decisions; it does not claim to learn a new behavior until that

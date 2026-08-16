@@ -31,6 +31,8 @@ export function LeftRail({
 }) {
   const { state, patch, reset } = useDemoStore();
   const { snapshot } = useWorkspaceData();
+  const mailboxNeedsReview =
+    mode === "connected" && snapshot?.mailboxStatus === "reauthorization_required";
   const activeTasks = mode === "demo"
     ? TASKS.filter(
         (task) => !state.doneTasks.includes(task.id) && !state.notTasks.includes(task.id),
@@ -106,10 +108,12 @@ export function LeftRail({
       <div className="rail-footer">
         <div className="account-email">{accountEmail}</div>
         <div className="sync-line">
-          <span className="moss-dot" />
+          <span className={`moss-dot ${mailboxNeedsReview ? "needs-review" : ""}`} />
           {mode === "demo"
             ? "SAMPLE INBOX · SAFE TO EXPLORE"
-            : state.connected
+            : mailboxNeedsReview
+              ? "GMAIL ACCESS NEEDS REVIEW"
+              : state.connected
               ? "GMAIL CONNECTED · UP TO DATE"
               : "GMAIL READY TO CONNECT"}
         </div>

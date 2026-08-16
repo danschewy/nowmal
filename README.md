@@ -21,6 +21,7 @@ The full product demo is public at `/demo` and needs no account. `/workspace` is
 - A normalized Neon/Drizzle data model and checked-in migration.
 - A `send_email` tool protected by Eve's durable `always()` approval, separate `gmail.send` consent, cleared-draft checks, a stable idempotency key, and an append-only audit record.
 - Once-per-page Google consent reconciliation keeps the connected UI current without reading Gmail; transient Clerk failures leave the last known state untouched, while every real send still rechecks the scope authoritatively.
+- Revoked Gmail read access is shown separately from the retained index: existing work remains usable, refresh pauses, and Setup routes the user to review Google access instead of pretending the mailbox is current.
 - Streamable HTTP MCP channel at `/eve/v1/mcp`, protected by Vercel OIDC in production and local-dev identity locally.
 - Unit interaction tests, production-browser tests, type checks, and a combined Eve + Next production build.
 

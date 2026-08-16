@@ -192,6 +192,8 @@
   background: var(--moss);
 }
 
+.moss-dot.needs-review { background: var(--accent); }
+
 .rail-footer p {
   margin: 12px 0 0;
   color: var(--ink-ghost);
@@ -1421,70 +1423,6 @@ a.action-button {
 .connected-agents strong { font-size: 16px; font-weight: 500; }
 .connected-agents p { margin: 5px 0 0; color: var(--ink-soft); font-size: 13px; }
 .connected-agents small { color: var(--ink-mute); font-family: var(--machine); font-size: 8.5px; letter-spacing: .09em; text-transform: uppercase; }
-
-.integration-wall,
-.auth-page {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 10vw;
-  background: var(--bone);
-}
-
-.integration-wall {
-  max-width: 820px;
-}
-
-.integration-kicker {
-  margin: 0;
-  color: var(--ink-mute);
-  font-family: var(--machine);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.integration-wall h1 {
-  margin: 24px 0 0;
-  font-size: 54px;
-  font-weight: 500;
-  line-height: 1.02;
-  letter-spacing: -0.04em;
-}
-
-.integration-wall > p:not(.integration-kicker) {
-  max-width: 60ch;
-  color: var(--ink-soft);
-  font-size: 18px;
-  line-height: 1.6;
-}
-
-.integration-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.integration-actions a {
-  padding: 12px 16px;
-  border: 1px solid var(--ink);
-  font-family: var(--machine);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-decoration: none;
-  text-transform: uppercase;
-}
-
-.integration-actions a:first-child {
-  background: var(--ink);
-  color: var(--bone);
-}
-
-.auth-page {
-  align-items: center;
-}
 
 .connected-empty {
   padding: 28px 0;

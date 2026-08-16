@@ -11,6 +11,10 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
   const { state, patch, notify } = useDemoStore();
   const { snapshot, refresh } = useWorkspaceData();
   const [phase, setPhase] = useState<"idle" | "syncing" | "analyzing">("idle");
+  const mailboxNeedsReview =
+    mode === "connected" && snapshot?.mailboxStatus === "reauthorization_required";
+  const readAuthorized =
+    mode === "demo" ? state.connected : snapshot?.mailboxStatus === "connected";
 
   const analyze = async () => {
     if (mode === "demo") return null;
@@ -76,47 +80,92 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
   };
 
   const permissions = [
-    ["Read recent mail", "Indexes up to 100 threads from the last 30 days. Older mail stays untouched.", "Included", state.connected],
-    ["Check for updates", "After the first pass, refreshes fetch only conversations that changed.", "Included", state.connected],
-    ["Find tasks and promises", "Analyzes only the bounded index and saves an exact source quote with every result.", "Included", Boolean(snapshot?.analysis.analyzedThreadCount)],
-    ["Keep one record per task", "Stores the useful context and source threads so the same request is not created twice.", "Included", state.connected],
-    ["Send an approved draft", "Optional access. Every send still pauses for your confirmation and is recorded.", "Optional", state.sendEnabled],
+    [
+      "Read recent mail",
+      "Indexes up to 100 threads from the last 30 days. Older mail stays untouched.",
+      "Included",
+      readAuthorized,
+      mailboxNeedsReview ? "Review" : "Included",
+    ],
+    [
+      "Check for updates",
+      "After the first pass, refreshes fetch only conversations that changed.",
+      "Included",
+      readAuthorized,
+      mailboxNeedsReview ? "Review" : "Included",
+    ],
+    [
+      "Find tasks and promises",
+      "Analyzes only the bounded index and saves an exact source quote with every result.",
+      "Included",
+      Boolean(snapshot?.analysis.analyzedThreadCount),
+      "Included",
+    ],
+    [
+      "Keep one record per task",
+      "Stores the useful context and source threads so the same request is not created twice.",
+      "Included",
+      state.connected,
+      "Included",
+    ],
+    [
+      "Send an approved draft",
+      "Optional access. Every send still pauses for your confirmation and is recorded.",
+      "Optional",
+      state.sendEnabled,
+      "Off",
+    ],
   ] as const;
 
   return (
     <div className="screen">
       <div className="screen-inner-720">
         <Eyebrow>Setup · Gmail connection</Eyebrow>
-        <PageHeading>Start read-only. Add sending only if you want it.</PageHeading>
+        <PageHeading>
+          {mailboxNeedsReview
+            ? "Reconnect Gmail without losing your workspace."
+            : "Start read-only. Add sending only if you want it."}
+        </PageHeading>
         <Lede>
-          Nowmal begins with up to 100 recent threads—enough to build a useful workspace without
-          pulling your whole mailbox. Future refreshes fetch only what changed. Read access can
-          never send, edit, or delete email.
+          {mailboxNeedsReview
+            ? "Your indexed threads, tasks, and corrections remain available. Review the Google connection before the next refresh; Nowmal will not treat a revoked token as a healthy inbox."
+            : "Nowmal begins with up to 100 recent threads—enough to build a useful workspace without pulling your whole mailbox. Future refreshes fetch only what changed. Read access can never send, edit, or delete email."}
         </Lede>
 
         <section className="account-card">
           <div>
             <strong>{accountEmail}</strong>
-            <small>Read-only · last 30 days · up to 100 recent threads · {state.threadCount.toLocaleString()} indexed</small>
+            <small>
+              {mailboxNeedsReview
+                ? "Indexed data retained · Google access needs review"
+                : "Read-only · last 30 days · up to 100 recent threads"}
+              {" · "}{state.threadCount.toLocaleString()} indexed
+            </small>
           </div>
-          <ActionButton
-            tone={state.connected ? "outline" : "solid"}
-            onClick={connect}
-            disabled={phase !== "idle"}
-          >
-            {phase === "syncing"
-              ? "Reading Gmail…"
-              : phase === "analyzing"
-                ? "Finding work…"
-                : state.connected
-                  ? "Refresh Gmail"
-                  : "Connect Gmail"}
-          </ActionButton>
+          {mailboxNeedsReview ? (
+            <Link href="/account" className="action-button action-solid">Review Gmail access</Link>
+          ) : (
+            <ActionButton
+              tone={state.connected ? "outline" : "solid"}
+              onClick={connect}
+              disabled={phase !== "idle"}
+            >
+              {phase === "syncing"
+                ? "Reading Gmail…"
+                : phase === "analyzing"
+                  ? "Finding work…"
+                  : state.connected
+                    ? "Refresh Gmail"
+                    : "Connect Gmail"}
+            </ActionButton>
+          )}
           <div className="scan-track"><span style={{ width: state.connected ? "100%" : "0%" }} /></div>
           <p>{state.connected
             ? mode === "demo"
               ? "Sample ready · 41 relevant threads · 9 tasks · 7 duplicate asks merged"
-              : `${state.threadCount.toLocaleString()} recent threads indexed · ${snapshot?.analysis.analyzedThreadCount.toLocaleString() ?? 0} analyzed · future refreshes fetch changes only`
+              : mailboxNeedsReview
+                ? `${state.threadCount.toLocaleString()} indexed threads are still available · reconnect before refreshing Gmail`
+                : `${state.threadCount.toLocaleString()} recent threads indexed · ${snapshot?.analysis.analyzedThreadCount.toLocaleString() ?? 0} analyzed · future refreshes fetch changes only`
             : "Connect when you are ready. Nothing is fetched beforehand."}</p>
         </section>
 
@@ -145,11 +194,11 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
         ) : null}
 
         <div className="permission-list">
-          {permissions.map(([label, note, tag, granted]) => (
+          {permissions.map(([label, note, tag, granted, inactiveTag]) => (
             <div key={label}>
               <span className={granted ? "granted" : "denied"} />
               <div><strong>{label}</strong><p>{note}</p></div>
-              <small>{granted ? tag : tag === "Optional" ? "Off" : tag}</small>
+              <small>{granted ? tag : inactiveTag}</small>
             </div>
           ))}
         </div>
@@ -169,7 +218,11 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
               aria-disabled={!state.connected}
               onClick={(event) => { if (!state.connected) event.preventDefault(); }}
             >
-              {state.sendEnabled ? "Review send access" : "Enable approved sends"}
+              {mailboxNeedsReview
+                ? "Review Google access"
+                : state.sendEnabled
+                  ? "Review send access"
+                  : "Enable approved sends"}
             </Link>
           ) : (
             <ActionButton

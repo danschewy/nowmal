@@ -1,8 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { isDatabaseConfigured } from "@/lib/data/client";
-import { getMailboxStatus, setMailboxSendEnabled } from "@/lib/data/repository";
-import { getGoogleAuthorization } from "@/lib/gmail/auth";
+import {
+  getMailboxStatus,
+  setMailboxAuthorizationStatus,
+} from "@/lib/data/repository";
+import { getGoogleScopeStatus } from "@/lib/gmail/auth";
 import { product } from "@/lib/domain/config";
 
 export async function GET() {
@@ -15,11 +18,16 @@ export async function GET() {
     return NextResponse.json({ connected: false, reason: "database_not_configured" }, { status: 503 });
   }
   let status = await getMailboxStatus(session.userId);
+  let readAuthorized = false;
   if (status.connection) {
     let sendEnabled: boolean;
     try {
-      const authorization = await getGoogleAuthorization(session.userId, [product.gmailSendScope]);
-      sendEnabled = authorization.authorized;
+      const scopes = await getGoogleScopeStatus(session.userId, [
+        product.gmailScope,
+        product.gmailSendScope,
+      ]);
+      readAuthorized = scopes[product.gmailScope] ?? false;
+      sendEnabled = scopes[product.gmailSendScope] ?? false;
     } catch {
       return NextResponse.json(
         {
@@ -30,14 +38,23 @@ export async function GET() {
         { status: 502 },
       );
     }
-    if (status.connection.sendEnabled !== sendEnabled) {
-      await setMailboxSendEnabled(session.userId, sendEnabled);
+    const connectionStatus = readAuthorized ? "connected" : "reauthorization_required";
+    if (
+      status.connection.sendEnabled !== sendEnabled ||
+      status.connection.status !== connectionStatus
+    ) {
+      await setMailboxAuthorizationStatus({
+        workspaceId: session.userId,
+        status: connectionStatus,
+        sendEnabled,
+      });
       status = await getMailboxStatus(session.userId);
     }
   }
   return NextResponse.json({
     connected: Boolean(status.connection),
     permissionStatus: "current",
+    readAuthorized,
     threadCount: status.threadCount,
     sendEnabled: status.connection?.sendEnabled ?? false,
     lastSyncedAt: status.connection?.lastSyncedAt?.toISOString() ?? null,

@@ -477,6 +477,11 @@ export async function getWorkspaceSnapshot(workspaceId: string): Promise<Workspa
 
   return {
     connected: Boolean(connection),
+    mailboxStatus: connection
+      ? connection.status === "connected"
+        ? "connected"
+        : "reauthorization_required"
+      : "disconnected",
     threadCount: counts[0]?.count ?? 0,
     correctionCount: correctionCounts[0]?.count ?? 0,
     sendEnabled: connection?.sendEnabled ?? false,
@@ -519,12 +524,20 @@ function analysisMetadata(attributes: Record<string, unknown>) {
   return value as { version?: string; analyzedAt?: string };
 }
 
-export async function setMailboxSendEnabled(workspaceId: string, enabled: boolean) {
+export async function setMailboxAuthorizationStatus(input: {
+  workspaceId: string;
+  status: "connected" | "reauthorization_required";
+  sendEnabled: boolean;
+}) {
   const db = getDb();
   await db
     .update(mailboxConnections)
-    .set({ sendEnabled: enabled, updatedAt: new Date() })
-    .where(eq(mailboxConnections.workspaceId, workspaceId));
+    .set({
+      status: input.status,
+      sendEnabled: input.sendEnabled,
+      updatedAt: new Date(),
+    })
+    .where(eq(mailboxConnections.workspaceId, input.workspaceId));
 }
 
 export async function listTasks(workspaceId: string, includeDone = false) {

@@ -15,6 +15,14 @@ export default function AccountPage() {
   }
   return (
     <main className="auth-page">
+      <div className="account-page-heading">
+        <Link href="/workspace">← Back to Nowmal</Link>
+        <div>
+          <p className="integration-kicker">Nowmal · Google access</p>
+          <h1>Review Gmail permissions.</h1>
+          <p>Read access refreshes the bounded index. Send access is separate and every send still requires approval.</p>
+        </div>
+      </div>
       <UserProfile additionalOAuthScopes={{ google: [product.gmailSendScope] }} />
     </main>
   );
