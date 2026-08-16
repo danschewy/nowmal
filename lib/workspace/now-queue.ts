@@ -4,8 +4,6 @@ import type {
   WorkspaceWorkItemSummary,
 } from "./snapshot";
 
-export const NOW_DUE_SOON_DAYS = 7;
-
 type NowSource = Pick<WorkspaceSnapshot, "drafts" | "workItems">;
 
 export interface ConnectedNowQueue {
@@ -20,17 +18,12 @@ export function selectConnectedNowQueue(
 ): ConnectedNowQueue {
   if (!source) return { drafts: [], workItems: [], count: 0 };
 
-  const cutoff = new Date(now.getTime() + NOW_DUE_SOON_DAYS * 24 * 60 * 60 * 1_000);
+  const cutoff = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1_000);
   const drafts = source.drafts.filter(
     (draft) => draft.state !== "sent" && draft.state !== "cancelled",
   );
   const workItems = source.workItems
-    .filter((item) => {
-      if (item.status === "done" || item.status === "incorrect") return false;
-      if (item.status === "needs_you") return true;
-      const dueAt = parseDueAt(item.dueAt);
-      return Boolean(dueAt && dueAt <= cutoff);
-    })
+    .filter((item) => item.status !== "done" && item.status !== "incorrect")
     .sort((left, right) => compareWorkItems(left, right, now, cutoff));
 
   return { drafts, workItems, count: drafts.length + workItems.length };

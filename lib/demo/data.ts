@@ -1005,6 +1005,7 @@ export const AGENT_TOOLS = [
     true,
   ],
   ["search_threads", "Search only the bounded Gmail index for this workspace.", "Read", true],
+  ["list_recent_threads", "List the newest mail already stored in the bounded Gmail index.", "Read", true],
   ["draft_reply", "Queue a reply in Now for review. This tool never sends.", "Write draft", true],
   [
     "answer_check",

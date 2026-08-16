@@ -10,7 +10,25 @@ export default defineTool({
   inputSchema: z.object({ workItemId: z.string().min(1) }),
   async execute({ workItemId }, ctx) {
     const { workspaceId } = workspaceFromContext(ctx);
-    if (isDatabaseConfigured()) return getEvidence(workspaceId, workItemId);
+    if (isDatabaseConfigured()) {
+      const result = await getEvidence(workspaceId, workItemId);
+      if (!result) return null;
+      return {
+        item: {
+          id: result.item.id,
+          kind: result.item.kind,
+          status: result.item.status,
+          title: result.item.title,
+          dueAt: result.item.dueAt?.toISOString() ?? null,
+          confidence: result.item.confidence,
+          metadata: result.item.metadata,
+        },
+        evidence: result.evidence.map((source) => ({
+          ...source,
+          sentAt: source.sentAt.toISOString(),
+        })),
+      };
+    }
     const task = TASKS.find((item) => item.id === workItemId);
     if (!task) return null;
     return {

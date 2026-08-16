@@ -34,6 +34,8 @@ Eve route authentication and Eve session ownership are separate boundaries. Cler
 
 Clerk is the smallest coherent choice here because the current Clerk SDK documents both Next.js resource protection and Eve tool authorization, and its backend can retrieve and refresh a user's Google provider token. That collapses identity and Gmail consent into one boundary. Neon remains data infrastructure rather than a second identity plane.
 
+The web app, Eve chat, and MCP all resolve to the same Clerk user ID before touching a workspace. Eve chat authenticates a full request as a Clerk session instead of manually selecting a cookie. The MCP endpoint is a Clerk OAuth protected resource, so compatible clients can complete consent and receive a short-lived user token; Vercel OIDC remains an internal workload fallback. Every durable MCP invocation is therefore scoped to the same Neon workspace as the signed-in app.
+
 ### Neon + Drizzle
 
 The product needs cross-session, cross-agent, independently queryable state. Eve `defineState` is intentionally session-scoped, so durable inbox state belongs in Postgres. Drizzle keeps the schema executable and the checked-in SQL migration inspectable.

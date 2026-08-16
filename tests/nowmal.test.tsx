@@ -115,8 +115,7 @@ describe("Nowmal connected workspace", () => {
     expect(screen.queryByText("Panel scheduling and references")).toBeNull();
   });
 
-  it("puts source-backed needs-you work in Now even when no draft exists", async () => {
-    const user = userEvent.setup();
+  it("presents source-backed work as one focused decision in Now", async () => {
     window.localStorage.clear();
     window.localStorage.setItem(
       "nowmal.connected.v1",
@@ -172,16 +171,93 @@ describe("Nowmal connected workspace", () => {
     render(<NowmalApp mode="connected" accountEmail="owner@example.com" />);
 
     expect(
-      await screen.findByRole("heading", { name: "1 item needs your attention." }),
+      await screen.findByRole("heading", { name: "Give this one thing your full attention." }),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: /^Now\s*1$/i })).toBeTruthy();
-    await user.click(
-      screen.getByRole("button", { name: /Send the requested project summary/i }),
+    expect(screen.getByRole("heading", { name: "Send the requested project summary" })).toBeTruthy();
+    expect(screen.getByText(/Could you send the project summary/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Mark done" })).toBeTruthy();
+    expect(screen.queryByText("Work to act on")).toBeNull();
+  });
+
+  it("searches full indexed message text beyond the browser snapshot", async () => {
+    const user = userEvent.setup();
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      "nowmal.connected.v1",
+      JSON.stringify({ connected: true, threadCount: 2, view: "mail" }),
     );
-    expect(
-      screen.getByRole("heading", { name: "Requests and follow-ups found in your mail." }),
-    ).toBeTruthy();
-    expect(screen.getByText("Evidence from Gmail")).toBeTruthy();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "/api/gmail/status") {
+        return new Response(
+          JSON.stringify({ connected: true, permissionStatus: "current" }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      if (url === "/api/workspace/search?q=sunspell") {
+        return new Response(
+          JSON.stringify({
+            threads: [{
+              id: "thread-sunspell",
+              gmailThreadId: "gmail-sunspell",
+              subject: "A result found from message body text",
+              participants: ["person@example.com"],
+              snippet: "The visible snippet does not contain the query.",
+              latestMessageAt: "2026-08-16T12:00:00.000Z",
+              analyzed: false,
+            }],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      if (url === "/api/workspace") {
+        return new Response(
+          JSON.stringify({
+            connected: true,
+            mailboxStatus: "connected",
+            threadCount: 2,
+            correctionCount: 0,
+            sendEnabled: false,
+            lastSyncedAt: "2026-08-16T12:00:00.000Z",
+            eveSessionId: null,
+            analysis: {
+              version: "tasks-promises-v1",
+              analyzedThreadCount: 0,
+              pendingThreadCount: 2,
+              workItemCount: 0,
+            },
+            workItems: [],
+            drafts: [],
+            threads: [{
+              id: "thread-recent",
+              gmailThreadId: "gmail-recent",
+              subject: "Unrelated recent mail",
+              participants: ["other@example.com"],
+              snippet: "Nothing locally matches.",
+              latestMessageAt: "2026-08-16T13:00:00.000Z",
+              analyzed: false,
+            }],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<NowmalApp mode="connected" accountEmail="owner@example.com" />);
+    await screen.findByText("Unrelated recent mail");
+    await user.type(
+      screen.getByRole("searchbox", { name: /Search tasks, people, or mail/i }),
+      "sunspell",
+    );
+
+    expect(await screen.findByText("A result found from message body text")).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/workspace/search?q=sunspell",
+      expect.objectContaining({ cache: "no-store" }),
+    );
   });
 
   it("confirms bounded model use before analyzing the stored Gmail index", async () => {

@@ -10,7 +10,13 @@ export default defineTool({
   inputSchema: z.object({ query: z.string().min(2).max(120), limit: z.number().int().min(1).max(50).default(20) }),
   async execute({ query, limit }, ctx) {
     const { workspaceId } = workspaceFromContext(ctx);
-    if (isDatabaseConfigured()) return searchThreads(workspaceId, query, limit);
+    if (isDatabaseConfigured()) {
+      const matches = await searchThreads(workspaceId, query, limit);
+      return matches.map((thread) => ({
+        ...thread,
+        latestMessageAt: thread.latestMessageAt.toISOString(),
+      }));
+    }
     const needle = query.toLowerCase();
     return Object.values(THREADS)
       .flat()

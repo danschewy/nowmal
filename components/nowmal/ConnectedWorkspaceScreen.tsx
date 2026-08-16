@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDemoStore } from "@/lib/demo/store";
 import type { View } from "@/lib/domain/types";
 import type {
@@ -8,10 +8,7 @@ import type {
   WorkspaceThreadSummary,
   WorkspaceWorkItemSummary,
 } from "@/lib/workspace/snapshot";
-import {
-  NOW_DUE_SOON_DAYS,
-  selectConnectedNowQueue,
-} from "@/lib/workspace/now-queue";
+import { selectConnectedNowQueue } from "@/lib/workspace/now-queue";
 import { useWorkspaceData } from "./WorkspaceData";
 import { ActionButton, Eyebrow, Lede, PageHeading, SectionLabel, StatusSquare } from "./ui";
 
@@ -121,21 +118,72 @@ export function ConnectedRulesScreen() {
 export function ConnectedSearchScreen() {
   const { snapshot } = useWorkspaceData();
   const { state, patch } = useDemoStore();
-  const query = state.query.trim().toLowerCase();
+  const rawQuery = state.query.trim();
+  const query = rawQuery.toLowerCase();
+  const [serverResult, setServerResult] = useState<{
+    query: string;
+    threads: WorkspaceThreadSummary[];
+  } | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const items = (snapshot?.workItems ?? []).filter((item) =>
     `${item.title} ${metadataText(item.metadata)}`.toLowerCase().includes(query),
   );
-  const threads = (snapshot?.threads ?? []).filter((thread) =>
+  const localThreads = (snapshot?.threads ?? []).filter((thread) =>
     `${thread.subject} ${thread.participants.join(" ")} ${thread.snippet}`
       .toLowerCase()
       .includes(query),
   );
+  const threads = serverResult?.query === rawQuery ? serverResult.threads : localThreads;
   const count = items.length + threads.length;
+
+  useEffect(() => {
+    if (rawQuery.length < 2) {
+      setSearching(false);
+      setSearchError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setSearching(true);
+      setSearchError(null);
+      try {
+        const response = await fetch(
+          `/api/workspace/search?q=${encodeURIComponent(rawQuery)}`,
+          { cache: "no-store", signal: controller.signal },
+        );
+        const result = (await response.json()) as {
+          error?: string;
+          threads?: WorkspaceThreadSummary[];
+        };
+        if (!response.ok) throw new Error(result.error ?? "Search could not be completed.");
+        setServerResult({ query: rawQuery, threads: result.threads ?? [] });
+      } catch (cause) {
+        if (controller.signal.aborted) return;
+        setSearchError(cause instanceof Error ? cause.message : "Search could not be completed.");
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
+    }, 180);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [rawQuery]);
 
   return (
     <div className="screen screen-search">
       <Eyebrow>Search · your indexed Gmail workspace</Eyebrow>
       <h1>{count ? `${count} ${count === 1 ? "result" : "results"} for “${state.query}”` : `No results for “${state.query}”`}</h1>
+      <div className="connected-search-status" aria-live="polite">
+        {searching
+          ? "Searching all indexed subjects, participants, snippets, and message text…"
+          : searchError
+            ? `${searchError} Showing matches from the current workspace view.`
+            : "Matches include the full bounded Gmail index, not only the recent mail on screen."}
+      </div>
       <div className="search-results">
         {items.map((item) => (
           <button
@@ -352,78 +400,197 @@ function ConnectedItemsScreen({ kind }: { kind: "task" | "promise" }) {
 }
 
 function ConnectedNowScreen() {
-  const { snapshot } = useWorkspaceData();
-  const { patch } = useDemoStore();
+  const { snapshot, refresh } = useWorkspaceData();
+  const { notify } = useDemoStore();
   const queue = selectConnectedNowQueue(snapshot);
-  const needsYouCount = queue.workItems.filter((item) => item.status === "needs_you").length;
-  const dueSoonCount = queue.workItems.length - needsYouCount;
+  const [handledIds, setHandledIds] = useState<Set<string>>(() => new Set());
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const drafts = queue.drafts.filter((draft) => !handledIds.has(draft.id));
+  const workItems = queue.workItems.filter((item) => !handledIds.has(item.id));
+  const activeDraft = drafts[0] ?? null;
+  const activeItem = activeDraft ? null : workItems[0] ?? null;
+  const remainingCount = drafts.length + workItems.length;
+  const sessionTotal = handledIds.size + remainingCount;
+  const progressDots = Math.min(sessionTotal, 8);
+
+  const advance = (id: string) => {
+    setHandledIds((current) => new Set(current).add(id));
+  };
+
+  const updateItem = async (
+    item: WorkspaceWorkItemSummary,
+    action: "done" | "incorrect",
+  ) => {
+    setUpdatingId(item.id);
+    try {
+      const response = await fetch(`/api/workspace/items/${encodeURIComponent(item.id)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(result.error ?? "Item could not be updated.");
+      advance(item.id);
+      await refresh();
+      notify(action === "done" ? `Completed: ${item.title}` : `Removed: ${item.title}`);
+    } catch (cause) {
+      notify(cause instanceof Error ? cause.message : "Item could not be updated.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  if (!queue.count) {
+    return (
+      <div className="screen">
+        <div className="screen-inner-800 now-complete">
+          <Eyebrow>Now · Session complete</Eyebrow>
+          <PageHeading>{handledIds.size ? "You finished this pass." : "You are caught up."}</PageHeading>
+          <p>
+            {handledIds.size
+              ? `${handledIds.size} ${handledIds.size === 1 ? "decision is" : "decisions are"} recorded. Nothing else is waiting in Now.`
+              : "No open source-backed task, promise, or draft is waiting for a decision."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeDraft && !activeItem) {
+    return (
+      <div className="screen">
+        <div className="screen-inner-800 now-complete">
+          <Eyebrow>Now · Session complete</Eyebrow>
+          <PageHeading>You made it through this pass.</PageHeading>
+          <p>
+            {handledIds.size} {handledIds.size === 1 ? "item was" : "items were"} completed,
+            corrected, or intentionally skipped. Skipped work remains available next time.
+          </p>
+          <ActionButton tone="solid" onClick={() => setHandledIds(new Set())}>
+            Review the queue again
+          </ActionButton>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="screen">
       <div className="screen-inner-800">
-        <Eyebrow>Now · your daily action queue</Eyebrow>
-        <PageHeading>
-          {queue.count
-            ? `${queue.count} ${queue.count === 1 ? "item needs" : "items need"} your attention.`
-            : "You are caught up."}
-        </PageHeading>
+        <Eyebrow>Now · One decision at a time</Eyebrow>
+        <PageHeading>Give this one thing your full attention.</PageHeading>
         <Lede>
-          Drafts waiting for review come first. Then Nowmal brings forward every source-backed
-          task or promise marked Needs you, plus waiting or later work due within {NOW_DUE_SOON_DAYS} days.
+          Nowmal orders the work; you decide what is true and what happens next. Nothing is
+          completed, corrected, or sent silently.
         </Lede>
 
-        {queue.count ? (
-          <div className="now-queue-summary" aria-label="Now queue summary">
-            <div><strong>{queue.drafts.length}</strong><span>Drafts to review</span></div>
-            <div><strong>{needsYouCount}</strong><span>Need you</span></div>
-            <div><strong>{dueSoonCount}</strong><span>Due soon</span></div>
+        <div className="session-progress" aria-label={`${handledIds.size + 1} of ${sessionTotal}`}>
+          <div>
+            {Array.from({ length: progressDots }, (_, index) => (
+              <span
+                key={index}
+                className={
+                  index < Math.min(handledIds.size, progressDots - 1)
+                    ? "done"
+                    : index === Math.min(handledIds.size, progressDots - 1)
+                      ? "current"
+                      : ""
+                }
+              />
+            ))}
           </div>
-        ) : null}
+          <span>
+            {handledIds.size + 1} of {sessionTotal} · {remainingCount - 1} after this
+          </span>
+        </div>
 
-        {!queue.count ? (
-          <ConnectedEmpty
-            title="Nothing needs your attention"
-            body="No draft is waiting for review, and no source-backed task or promise is actionable or due soon."
-          />
-        ) : null}
-
-        {queue.drafts.length ? (
-          <section className="now-queue-section">
-            <SectionLabel right={`${queue.drafts.length} ${queue.drafts.length === 1 ? "draft" : "drafts"}`}>
-              Review before anything can send
-            </SectionLabel>
-            <div className="connected-draft-list">
-              {queue.drafts.map((draft) => <ConnectedDraft key={draft.id} draft={draft} />)}
+        {activeDraft ? (
+          <section className="now-task connected-now-focus">
+            <div className="connected-now-kind">Draft · {draftStateLabel(activeDraft.state)}</div>
+            <h2>Review the reply to {activeDraft.to}</h2>
+            <ConnectedDraft draft={activeDraft} />
+            <div className="connected-now-guidance">
+              <SectionLabel right={activeDraft.unresolvedCheckCount ? `${activeDraft.unresolvedCheckCount} left` : "Checks clear"}>
+                Before anything can send
+              </SectionLabel>
+              <p>
+                Use Eve at the right to inspect or answer the draft checks. Sending still requires
+                your explicit confirmation for this exact draft.
+              </p>
             </div>
+            <footer className="gate-footer">
+              <div>
+                <ActionButton tone="ghost" onClick={() => advance(activeDraft.id)}>
+                  Skip for now
+                </ActionButton>
+              </div>
+              <p>The draft stays queued. Skipping cannot send it.</p>
+            </footer>
           </section>
-        ) : null}
-
-        {queue.workItems.length ? (
-          <section className="now-queue-section">
-            <SectionLabel right={`${queue.workItems.length} source-backed`}>
-              Work to act on
-            </SectionLabel>
-            <div className="now-work-list">
-              {queue.workItems.map((item) => (
-                <article key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => patch({
-                      view: item.kind === "task" ? "tasks" : "promises",
-                      openTaskId: item.id,
-                    })}
-                  >
-                    <StatusSquare status={statusSquare(item.status)} />
-                    <span>
-                      <small>{item.kind} · {itemStatusLabel(item.status)}</small>
-                      <strong>{item.title}</strong>
-                      <span>{item.evidence.length} verified {item.evidence.length === 1 ? "source" : "sources"}</span>
-                    </span>
-                    <span>{formatDue(item.dueAt)}</span>
-                  </button>
-                </article>
-              ))}
+        ) : activeItem ? (
+          <section className="now-task connected-now-focus">
+            <div className="connected-now-kind">
+              {activeItem.kind} · {itemStatusLabel(activeItem.status)} · {formatDue(activeItem.dueAt)}
             </div>
+            <h2>{activeItem.title}</h2>
+            {activeItem.evidence[0] ? (
+              <div className="now-evidence">
+                <span />
+                <p>
+                  “{activeItem.evidence[0].quote}”
+                  <small>
+                    {activeItem.evidence[0].sender} · {formatDate(activeItem.evidence[0].sentAt)}
+                  </small>
+                </p>
+              </div>
+            ) : (
+              <p className="connected-now-no-evidence">No exact source quote is attached to this item.</p>
+            )}
+
+            <div className="connected-now-context">
+              <SectionLabel right={`${activeItem.evidence.length} verified ${activeItem.evidence.length === 1 ? "source" : "sources"}`}>
+                What Nowmal knows
+              </SectionLabel>
+              <dl>
+                {Object.entries(activeItem.metadata)
+                  .filter(([key]) => key !== "analysis")
+                  .slice(0, 4)
+                  .map(([key, value]) => (
+                    <div key={key}><dt>{humanize(key)}</dt><dd>{formatMetadata(value)}</dd></div>
+                  ))}
+              </dl>
+              {activeItem.evidence[0] ? (
+                <a
+                  href={`https://mail.google.com/mail/u/0/#all/${encodeURIComponent(activeItem.evidence[0].gmailThreadId)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open source thread
+                </a>
+              ) : null}
+            </div>
+
+            <footer className="gate-footer">
+              <div>
+                <ActionButton
+                  tone="solid"
+                  disabled={updatingId === activeItem.id}
+                  onClick={() => void updateItem(activeItem, "done")}
+                >
+                  Mark done
+                </ActionButton>
+                <ActionButton
+                  disabled={updatingId === activeItem.id}
+                  onClick={() => void updateItem(activeItem, "incorrect")}
+                >
+                  Not {activeItem.kind === "task" ? "a task" : "a promise"}
+                </ActionButton>
+                <ActionButton tone="ghost" disabled={updatingId === activeItem.id} onClick={() => advance(activeItem.id)}>
+                  Skip for now
+                </ActionButton>
+              </div>
+              <p>Your decision is preserved across later Gmail analysis.</p>
+            </footer>
           </section>
         ) : null}
       </div>

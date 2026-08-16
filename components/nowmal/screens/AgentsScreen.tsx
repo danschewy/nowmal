@@ -30,7 +30,7 @@ export function AgentsScreen({ mode }: { mode: "demo" | "connected" }) {
 
         <section className="connection-card">
           <div><span>Endpoint</span><code>{endpoint}</code><ActionButton tone={state.copied ? "outline" : "solid"} onClick={copy}>{state.copied ? "Copied" : "Copy"}</ActionButton></div>
-          <div><span>Auth</span><code>Vercel OIDC in production · local identity in development</code><span /></div>
+          <div><span>Auth</span><code>Your Nowmal account through Clerk OAuth · local identity in development</code><span /></div>
           <div><span>Transport</span><code>Streamable HTTP · approval required for sensitive actions</code><span /></div>
         </section>
 

@@ -38,7 +38,7 @@ function draft(id: string, state: WorkspaceDraftSummary["state"]): WorkspaceDraf
 }
 
 describe("connected Now queue", () => {
-  it("combines active drafts, needs-you work, and non-actionable work due within seven days", () => {
+  it("combines active drafts and every open source-backed item in priority order", () => {
     const queue = selectConnectedNowQueue(
       {
         drafts: [draft("queued", "queued"), draft("sent", "sent")],
@@ -59,7 +59,9 @@ describe("connected Now queue", () => {
       "waiting-overdue",
       "later-soon",
       "needs-you",
+      "later-future",
+      "waiting-no-date",
     ]);
-    expect(queue.count).toBe(4);
+    expect(queue.count).toBe(6);
   });
 });

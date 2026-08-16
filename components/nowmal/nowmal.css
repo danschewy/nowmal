@@ -1613,6 +1613,78 @@ a.action-button {
   margin-top: 34px;
 }
 
+.connected-search-status {
+  min-height: 17px;
+  margin: -18px 0 24px;
+  color: var(--ink-mute);
+  font-family: var(--machine);
+  font-size: 8.5px;
+  letter-spacing: 0.09em;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+
+.connected-now-kind {
+  margin-bottom: 11px;
+  color: var(--ink-mute);
+  font-family: var(--machine);
+  font-size: 9px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.connected-now-focus .connected-draft-card { margin-top: 28px; }
+
+.connected-now-guidance,
+.connected-now-context {
+  margin-top: 34px;
+}
+
+.connected-now-guidance > p,
+.connected-now-no-evidence {
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.connected-now-context dl {
+  margin: 12px 0 0;
+}
+
+.connected-now-context dl > div {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.35fr) 1fr;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.connected-now-context dt {
+  color: var(--ink-mute);
+  font-family: var(--machine);
+  font-size: 8.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.connected-now-context dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.connected-now-context > a {
+  display: inline-block;
+  margin-top: 16px;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--ink-mute);
+  font-family: var(--machine);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
 .now-queue-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

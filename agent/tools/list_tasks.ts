@@ -10,7 +10,13 @@ export default defineTool({
   inputSchema: z.object({ includeDone: z.boolean().default(false) }),
   async execute({ includeDone }, ctx) {
     const { workspaceId } = workspaceFromContext(ctx);
-    if (isDatabaseConfigured()) return listTasks(workspaceId, includeDone);
+    if (isDatabaseConfigured()) {
+      const tasks = await listTasks(workspaceId, includeDone);
+      return tasks.map((task) => ({
+        ...task,
+        dueAt: task.dueAt?.toISOString() ?? null,
+      }));
+    }
     return TASKS.filter((task) => includeDone || task.status !== "done").map((task) => ({
       id: task.id,
       title: task.title,

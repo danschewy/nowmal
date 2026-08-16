@@ -9,7 +9,8 @@ These are the only parts that cannot be completed from the repository alone.
 3. Enable the Gmail API in that Google Cloud project.
 4. Add `https://www.googleapis.com/auth/gmail.readonly` to the Google connection's additional scopes.
 5. Keep `https://www.googleapis.com/auth/gmail.send` out of the default sign-in grant. Nowmal requests it separately through `/account` when the user enables gated send.
-6. Put Clerk's publishable and secret keys into Vercel as `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`.
+6. Review Clerk's OAuth consent branding and enable dynamic client registration for MCP clients. Keep the allowed scopes minimal; Nowmal advertises only `openid` for MCP identity.
+7. Put Clerk's publishable and secret keys into Vercel as `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`.
 
 Gmail mailbox scopes can require Google OAuth verification before a public production launch. During Testing status, add intended testers in Google Cloud.
 
