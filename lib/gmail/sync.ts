@@ -8,6 +8,7 @@ import {
   mapWithConcurrency,
   plainTextOf,
 } from "./client";
+import { product } from "@/lib/domain/config";
 import {
   getMailboxStatus,
   upsertGmailThread,
@@ -33,17 +34,21 @@ export async function syncGmailMailbox(input: {
       const changed = await listChangedThreadIds(
         input.accessToken,
         current.connection.historyId,
-        input.maxThreads ?? 500,
+        input.maxThreads ?? product.gmailSyncDefaultMaxThreads,
       );
       threadIds = changed.threadIds;
       mode = "incremental";
     } else {
-      threadIds = await listRecentThreadIds(input.accessToken, { maxThreads: input.maxThreads ?? 500 });
+      threadIds = await listRecentThreadIds(input.accessToken, {
+        maxThreads: input.maxThreads ?? product.gmailSyncDefaultMaxThreads,
+      });
     }
   } catch (error) {
-    // Gmail expires history cursors. A bounded 90-day rebuild is the correct recovery path.
+    // Gmail expires history cursors. A bounded 30-day rebuild is the correct recovery path.
     if (!(error instanceof Error) || !error.message.includes("Gmail API 404")) throw error;
-    threadIds = await listRecentThreadIds(input.accessToken, { maxThreads: input.maxThreads ?? 500 });
+    threadIds = await listRecentThreadIds(input.accessToken, {
+      maxThreads: input.maxThreads ?? product.gmailSyncDefaultMaxThreads,
+    });
   }
 
   const hydrated = await mapWithConcurrency(threadIds, 8, async (threadId) => {

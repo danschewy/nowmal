@@ -54,11 +54,11 @@ Gmail threads and messages are normalized. Tasks can cite several threads throug
 
 ## Gmail ingestion
 
-The initial pull uses Gmail's search query `newer_than:90d`, pages thread IDs, and hydrates at concurrency 8. It stores one normalized thread and upserts messages by `(workspace_id, gmail_message_id)`.
+The initial pull uses Gmail's search query `newer_than:30d`, stops after 100 thread IDs, and hydrates at concurrency 8. It stores one normalized thread and upserts messages by `(workspace_id, gmail_message_id)`.
 
-Later pulls use the mailbox's Gmail `historyId` and request only `messageAdded` changes. An expired history cursor returns 404; the safe recovery is a bounded 90-day rebuild. Search text is materialized once per thread and GIN-indexed, so search does not repeatedly concatenate messages.
+Later pulls use the mailbox's Gmail `historyId` and request only `messageAdded` changes. An expired history cursor returns 404; the safe recovery is the same bounded 30-day rebuild. Search text is materialized once per thread and GIN-indexed, so search does not repeatedly concatenate messages.
 
-The first production slice caps a manual pull at 500 hydrated threads per request to control Gmail quota and server duration. The next deployment step for large inboxes is to place continuation batches on Vercel Workflow and connect Gmail watch notifications through Google Pub/Sub.
+The default manual pull hydrates at most 100 threads; the server also enforces an absolute 500-thread ceiling for explicit maintenance calls. This controls Gmail quota, data ingestion, and server duration. The next deployment step for large inboxes is to place user-approved continuation batches on Vercel Workflow and connect Gmail watch notifications through Google Pub/Sub.
 
 ## Task and grouping efficiency
 

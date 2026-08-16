@@ -12,7 +12,7 @@ The full product demo is public at `/demo` and needs no account. `/workspace` is
   assistant panel connected through Eve's streaming React client.
 - Typed Eve tools for task queries, evidence, stash, thread search, Gmail sync, draft queuing, sourced check answers, and sending.
 - Clerk route identity and Google OAuth token brokerage.
-- Bounded initial Gmail sync (90 days) and efficient incremental sync with Gmail `historyId` cursors.
+- Conservative initial Gmail sync (at most 100 threads from 30 days) and efficient incremental sync with Gmail `historyId` cursors.
 - A normalized Neon/Drizzle data model and checked-in migration.
 - A `send_email` tool protected by Eve's durable `always()` approval, separate `gmail.send` consent, cleared-draft checks, a stable idempotency key, and an append-only audit record.
 - Streamable HTTP MCP channel at `/eve/v1/mcp`, protected by Vercel OIDC in production and local-dev identity locally.

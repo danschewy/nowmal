@@ -1,3 +1,5 @@
+import { product } from "@/lib/domain/config";
+
 const GMAIL_ROOT = "https://gmail.googleapis.com/gmail/v1/users/me";
 
 interface GmailHeader {
@@ -77,11 +79,11 @@ export async function listRecentThreadIds(
 ) {
   const ids: string[] = [];
   let pageToken: string | undefined;
-  const maxThreads = options.maxThreads ?? 500;
+  const maxThreads = options.maxThreads ?? product.gmailSyncDefaultMaxThreads;
   do {
     const params = new URLSearchParams({
       maxResults: String(Math.min(100, maxThreads - ids.length)),
-      q: options.query ?? "newer_than:90d",
+      q: options.query ?? product.gmailInitialQuery,
     });
     if (pageToken) params.set("pageToken", pageToken);
     const page = await gmailFetch<GmailListResponse>(accessToken, `/threads?${params}`);
@@ -94,7 +96,7 @@ export async function listRecentThreadIds(
 export async function listChangedThreadIds(
   accessToken: string,
   startHistoryId: string,
-  maxThreads = 500,
+  maxThreads: number = product.gmailSyncHardMaxThreads,
 ) {
   const ids = new Set<string>();
   let pageToken: string | undefined;

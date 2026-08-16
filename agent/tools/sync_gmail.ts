@@ -8,8 +8,15 @@ import { syncGmailMailbox } from "../../lib/gmail/sync";
 import { workspaceFromContext } from "../lib/context";
 
 export default defineTool({
-  description: "Refresh the authenticated caller's bounded 90-day Gmail index. Use only for setup or an explicit refresh.",
-  inputSchema: z.object({ maxThreads: z.number().int().min(1).max(500).default(500) }),
+  description: "Refresh the authenticated caller's bounded 30-day Gmail index. Use only for setup or an explicit refresh.",
+  inputSchema: z.object({
+    maxThreads: z
+      .number()
+      .int()
+      .min(1)
+      .max(product.gmailSyncHardMaxThreads)
+      .default(product.gmailSyncDefaultMaxThreads),
+  }),
   approval: once(),
   async execute({ maxThreads }, ctx) {
     const { workspaceId } = workspaceFromContext(ctx);

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { sendGmailMessage } from "@/lib/gmail/client";
+import { listRecentThreadIds, sendGmailMessage } from "@/lib/gmail/client";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -66,5 +66,27 @@ describe("Gmail send construction", () => {
     ).rejects.toThrow("A valid idempotency key is required");
 
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("Gmail ingestion bounds", () => {
+  it("stops the default first read at 100 threads from the last 30 days", async () => {
+    const threads = Array.from({ length: 100 }, (_, index) => ({ id: `thread-${index}` }));
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ threads, nextPageToken: "more-mail-exists" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const ids = await listRecentThreadIds("google-token");
+
+    expect(ids).toHaveLength(100);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [url] = fetchMock.mock.calls[0] as [string];
+    const requestUrl = new URL(url);
+    expect(requestUrl.searchParams.get("q")).toBe("newer_than:30d");
+    expect(requestUrl.searchParams.get("maxResults")).toBe("100");
   });
 });

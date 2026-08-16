@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { SignIn } from "@clerk/nextjs";
+import { SignUp } from "@clerk/nextjs";
 
-export default function SignInPage() {
+export default function SignUpPage() {
   if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
     return (
       <main className="integration-wall">
-        <p className="integration-kicker">Nowmal · Sign in</p>
+        <p className="integration-kicker">Nowmal · Create account</p>
         <h1>Clerk is not configured yet.</h1>
         <p>The public demo is available now and does not require an account.</p>
         <div className="integration-actions">
@@ -17,7 +17,7 @@ export default function SignInPage() {
 
   return (
     <main className="auth-page">
-      <SignIn signUpUrl="/sign-up" />
+      <SignUp signInUrl="/sign-in" />
     </main>
   );
 }

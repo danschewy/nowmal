@@ -16,7 +16,13 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json().catch(() => ({}))) as { maxThreads?: number };
-  const maxThreads = Math.max(1, Math.min(Number(body.maxThreads ?? 500), 500));
+  const maxThreads = Math.max(
+    1,
+    Math.min(
+      Number(body.maxThreads ?? product.gmailSyncDefaultMaxThreads),
+      product.gmailSyncHardMaxThreads,
+    ),
+  );
   const token = await getGoogleAccessToken(session.userId, [product.gmailScope]);
   const user = await currentUser();
   const result = await syncGmailMailbox({

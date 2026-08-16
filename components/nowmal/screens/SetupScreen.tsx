@@ -41,7 +41,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
       const response = await fetch("/api/gmail/sync", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ maxThreads: 500 }),
+        body: JSON.stringify({ maxThreads: product.gmailSyncDefaultMaxThreads }),
       });
       const result = (await response.json()) as { hydratedThreads?: number; totalThreads?: number; error?: string };
       if (!response.ok) throw new Error(result.error ?? "Gmail sync failed.");
@@ -55,7 +55,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
   };
 
   const permissions = [
-    ["Read the last 90 days, once", "The first pass is bounded. Older mail is never fetched.", "Required", state.connected],
+    ["Read the last 30 days, once", "The first pass stops after 100 threads. Older mail is never fetched.", "Required", state.connected],
     ["Refresh only changed mail", "After the first pass, Gmail's history cursor returns only changed threads.", "Required", state.connected],
     ["Keep a stash per task", "Company, role, stage, contact, dates, thread ids. Stored so a task is never invented twice.", "Required", state.connected],
     ["Send a cleared Now draft", "A separate Gmail scope. Every call pauses for your approval, checks idempotency, and writes an audit record.", "Gated", state.sendEnabled],
@@ -67,7 +67,8 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
         <Eyebrow>Setup · step 2 of 3</Eyebrow>
         <PageHeading>Nowmal reads. Sending stays gated.</PageHeading>
         <Lede>
-          The first pass reads ninety days once, then each refresh uses Gmail's history cursor.
+          The first pass reads at most one hundred threads from the last thirty days, then each
+          refresh uses Gmail&apos;s history cursor.
           Eve can prepare a send, but only a cleared Now draft with a fresh human approval may
           leave the account.
         </Lede>
@@ -75,7 +76,7 @@ export function SetupScreen({ accountEmail, mode }: { accountEmail: string; mode
         <section className="account-card">
           <div>
             <strong>{accountEmail}</strong>
-            <small>Read-only · 90 days · {state.threadCount.toLocaleString()} threads indexed</small>
+            <small>Read-only · 30 days · up to 100 threads · {state.threadCount.toLocaleString()} indexed</small>
           </div>
           <ActionButton
             tone={state.connected ? "outline" : "solid"}

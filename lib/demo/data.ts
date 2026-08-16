@@ -1004,7 +1004,7 @@ export const AGENT_TOOLS = [
     "Read",
     true,
   ],
-  ["search_threads", "Full-text over the ninety days Eve has read.", "Read", true],
+  ["search_threads", "Full-text over the bounded mail Eve has read.", "Read", true],
   ["draft_reply", "Write a draft into Now. It queues, it does not send.", "Write draft", true],
   [
     "answer_check",

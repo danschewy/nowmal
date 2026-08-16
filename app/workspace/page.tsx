@@ -20,7 +20,7 @@ export default async function WorkspacePage() {
           permissions stay attached to you.
         </p>
         <div className="integration-actions">
-          <Link href="/sign-in">Sign in with Google</Link>
+        <Link href="/sign-up">Continue with Google</Link>
           <Link href="/demo">Open the public demo</Link>
         </div>
       </main>
