@@ -198,6 +198,7 @@ describe("Nowmal connected workspace", () => {
       if (url === "/api/workspace/search?q=sunspell") {
         return new Response(
           JSON.stringify({
+            expandedIndex: true,
             threads: [{
               id: "thread-sunspell",
               gmailThreadId: "gmail-sunspell",
@@ -254,6 +255,7 @@ describe("Nowmal connected workspace", () => {
     );
 
     expect(await screen.findByText("A result found from message body text")).toBeTruthy();
+    expect(screen.getByText(/Found beyond the initial mailbox sample/i)).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/workspace/search?q=sunspell",
       expect.objectContaining({ cache: "no-store" }),

@@ -75,6 +75,31 @@ export async function syncGmailMailbox(input: {
   };
 }
 
+export async function searchAndIndexGmailMailbox(input: {
+  workspaceId: string;
+  accessToken: string;
+  query: string;
+  maxThreads?: number;
+}) {
+  const literalQuery = input.query.replace(/["\\]/g, " ").replace(/\s+/g, " ").trim();
+  if (literalQuery.length < 2) return { hydratedThreads: 0 };
+  const maxThreads = Math.max(1, Math.min(input.maxThreads ?? 10, 10));
+  const [profile, threadIds] = await Promise.all([
+    getGmailProfile(input.accessToken),
+    listRecentThreadIds(input.accessToken, {
+      query: `in:anywhere "${literalQuery}"`,
+      maxThreads,
+    }),
+  ]);
+  const hydrated = await mapWithConcurrency(threadIds, 4, async (threadId) => {
+    const thread = await getGmailThread(input.accessToken, threadId);
+    const normalized = normalizeThread(profile.emailAddress, thread);
+    await upsertGmailThread(input.workspaceId, normalized);
+    return normalized;
+  });
+  return { hydratedThreads: hydrated.length };
+}
+
 function normalizeThread(accountEmail: string, thread: GmailThread): GmailThreadRecord {
   const sourceMessages = thread.messages ?? [];
   const messages = sourceMessages.map((message) => normalizeMessage(accountEmail, message));

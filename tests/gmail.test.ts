@@ -89,4 +89,27 @@ describe("Gmail ingestion bounds", () => {
     expect(requestUrl.searchParams.get("q")).toBe("newer_than:30d");
     expect(requestUrl.searchParams.get("maxResults")).toBe("100");
   });
+
+  it("keeps an explicit Gmail search to its requested result cap", async () => {
+    const threads = Array.from({ length: 10 }, (_, index) => ({ id: `match-${index}` }));
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ threads, nextPageToken: "more-matches-exist" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const ids = await listRecentThreadIds("google-token", {
+      query: 'in:anywhere "sunspell"',
+      maxThreads: 10,
+    });
+
+    expect(ids).toHaveLength(10);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [url] = fetchMock.mock.calls[0] as [string];
+    const requestUrl = new URL(url);
+    expect(requestUrl.searchParams.get("q")).toBe('in:anywhere "sunspell"');
+    expect(requestUrl.searchParams.get("maxResults")).toBe("10");
+  });
 });

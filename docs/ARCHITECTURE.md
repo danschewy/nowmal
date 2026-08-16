@@ -36,6 +36,8 @@ Clerk is the smallest coherent choice here because the current Clerk SDK documen
 
 The web app, Eve chat, and MCP all resolve to the same Clerk user ID before touching a workspace. Eve chat authenticates a full request as a Clerk session instead of manually selecting a cookie. The MCP endpoint is a Clerk OAuth protected resource, so compatible clients can complete consent and receive a short-lived user token; Vercel OIDC remains an internal workload fallback. Every durable MCP invocation is therefore scoped to the same Neon workspace as the signed-in app.
 
+Gmail ingestion stays deliberately bounded: the first sync reads at most 100 recent threads and later refreshes use `historyId`. Connected Search queries the private index first. Only when that index has no match does an explicit user search ask Gmail for up to 10 exact matching conversations and add just those conversations to the index. This keeps long-tail mail discoverable without turning search into an unbounded mailbox import.
+
 ### Neon + Drizzle
 
 The product needs cross-session, cross-agent, independently queryable state. Eve `defineState` is intentionally session-scoped, so durable inbox state belongs in Postgres. Drizzle keeps the schema executable and the checked-in SQL migration inspectable.

@@ -630,7 +630,8 @@ a.action-button {
   border-top: 1px solid var(--hairline);
 }
 
-.search-results button {
+.search-results button,
+.search-results a {
   width: 100%;
   display: grid;
   grid-template-columns: 96px 1fr;
@@ -641,14 +642,17 @@ a.action-button {
   background: transparent;
   color: var(--ink);
   cursor: pointer;
+  text-decoration: none;
   text-align: left;
 }
 
-.search-results button:hover {
+.search-results button:hover,
+.search-results a:hover {
   background: var(--paper);
 }
 
-.search-results button > span:first-child {
+.search-results button > span:first-child,
+.search-results a > span:first-child {
   color: var(--ink-mute);
   font-family: var(--machine);
   font-size: 9.5px;
@@ -1615,7 +1619,7 @@ a.action-button {
 
 .connected-search-status {
   min-height: 17px;
-  margin: -18px 0 24px;
+  margin: 16px 0 0;
   color: var(--ink-mute);
   font-family: var(--machine);
   font-size: 8.5px;
@@ -1623,6 +1627,8 @@ a.action-button {
   line-height: 1.6;
   text-transform: uppercase;
 }
+
+.connected-search-status + .search-results { margin-top: 24px; }
 
 .connected-now-kind {
   margin-bottom: 11px;

@@ -121,6 +121,7 @@ export function ConnectedSearchScreen() {
   const rawQuery = state.query.trim();
   const query = rawQuery.toLowerCase();
   const [serverResult, setServerResult] = useState<{
+    expandedIndex: boolean;
     query: string;
     threads: WorkspaceThreadSummary[];
   } | null>(null);
@@ -155,17 +156,22 @@ export function ConnectedSearchScreen() {
         );
         const result = (await response.json()) as {
           error?: string;
+          expandedIndex?: boolean;
           threads?: WorkspaceThreadSummary[];
         };
         if (!response.ok) throw new Error(result.error ?? "Search could not be completed.");
-        setServerResult({ query: rawQuery, threads: result.threads ?? [] });
+        setServerResult({
+          expandedIndex: result.expandedIndex ?? false,
+          query: rawQuery,
+          threads: result.threads ?? [],
+        });
       } catch (cause) {
         if (controller.signal.aborted) return;
         setSearchError(cause instanceof Error ? cause.message : "Search could not be completed.");
       } finally {
         if (!controller.signal.aborted) setSearching(false);
       }
-    }, 180);
+    }, 400);
 
     return () => {
       controller.abort();
@@ -179,10 +185,12 @@ export function ConnectedSearchScreen() {
       <h1>{count ? `${count} ${count === 1 ? "result" : "results"} for “${state.query}”` : `No results for “${state.query}”`}</h1>
       <div className="connected-search-status" aria-live="polite">
         {searching
-          ? "Searching all indexed subjects, participants, snippets, and message text…"
+          ? "Searching the private index, then up to 10 matching Gmail conversations if needed…"
           : searchError
             ? `${searchError} Showing matches from the current workspace view.`
-            : "Matches include the full bounded Gmail index, not only the recent mail on screen."}
+            : serverResult?.query === rawQuery && serverResult.expandedIndex
+              ? "Found beyond the initial mailbox sample and added only the matching conversations to your private index."
+              : "Matches include full message text in your private index, not only the recent mail on screen."}
       </div>
       <div className="search-results">
         {items.map((item) => (
@@ -202,14 +210,15 @@ export function ConnectedSearchScreen() {
           </button>
         ))}
         {threads.map((thread) => (
-          <button
+          <a
             key={thread.id}
-            type="button"
-            onClick={() => patch({ view: "mail", openThreadId: thread.id, query: "" })}
+            href={`https://mail.google.com/mail/u/0/#all/${encodeURIComponent(thread.gmailThreadId)}`}
+            target="_blank"
+            rel="noreferrer"
           >
             <span>Thread</span>
             <span><strong>{thread.subject}</strong><small>{thread.participants.join(", ")} · {thread.snippet}</small></span>
-          </button>
+          </a>
         ))}
       </div>
     </div>
