@@ -1,30 +1,32 @@
 # Nowmal
 
-Nowmal turns Gmail into a clear plan. It finds requests, deadlines, and commitments; groups related conversations; and keeps repeated processes current. Eve explains why each item surfaced, prepares replies, and—when separately enabled—can request a send that still requires human approval.
+Nowmal is an intelligence layer for Gmail, not another inbox. It finds requests, deadlines, and commitments; groups related conversations; and turns the work that matters into a calm, one-at-a-time queue. Eve can explain every inference and prepare a reply, but a person always controls what leaves the account.
 
-The full product demo is public at `/demo` and needs no account. `/workspace` is the private Clerk + Gmail + Neon path.
+Try the complete account-free product at [`/demo`](https://nowmal.vercel.app/demo). The connected product lives at [`/workspace`](https://nowmal.vercel.app/workspace) and uses the signed-in person's Gmail, Clerk identity, and isolated Neon workspace.
 
-## What is implemented
+## Product model
 
-- High-fidelity desktop product across Brief, Now, Tasks, Promises, Trackers, Mail, Setup, Rules, Agents, and global search.
-- Real task evidence, dedupe lineage, stashed fields, corrections, snoozing, pull cadence, trackers, clusters, draft gates, undo, and a persistent Eve panel in the public demo.
-- A filesystem-first Eve 0.38 agent mounted into Next.js 16 with `withEve()`, with the private
-  assistant panel connected through Eve's streaming React client.
-- Clerk-scoped Eve session ownership persisted in Neon, with only the current agent generation's durable browser session resumed after reload. Legacy and MCP sessions cannot replace the web conversation.
-- Typed Eve tools for task queries, evidence, stash, thread search, Gmail sync, draft queuing, sourced check answers, and sending.
-- Clerk route identity and Google OAuth token brokerage.
-- Bounded initial Gmail sync (at most 300 threads from 30 days) and efficient incremental sync with Gmail `historyId` cursors.
-- An authenticated, bounded workspace snapshot that renders real indexed threads, work items, drafts, counts, and search results without ever falling back to public sample records.
-- A shared daily Now queue that puts draft approvals first, then every source-backed Needs-you item and any waiting or later work due within seven days; the screen and navigation count use the same selector.
-- A truthful connected policy screen that reports enforced server behavior and correction counts rather than reusing sample-only automation switches.
-- Source-backed workstream grouping that promotes only repeated counterparties or multi-thread obligations and refuses to invent pipeline stages from a single conversation.
-- Bounded AI analysis of the stored index in 16-thread batches, with prompt-injection isolation, exact-quote validation, deterministic dedupe keys, incremental re-analysis, and append-only user corrections.
-- A normalized Neon/Drizzle data model and checked-in migration.
-- A `send_email` tool protected by Eve's durable `always()` approval, separate `gmail.send` consent, cleared-draft checks, a stable idempotency key, and an append-only audit record.
-- Once-per-page Google consent reconciliation keeps the connected UI current without reading Gmail; transient Clerk failures leave the last known state untouched, while every real send still rechecks the scope authoritatively.
-- Revoked Gmail read access is shown separately from the retained index: existing work remains usable, refresh pauses, and Setup routes the user to review Google access instead of pretending the mailbox is current.
-- Streamable HTTP MCP channel at `/eve/v1/mcp`, protected by Vercel OIDC in production and local-dev identity locally.
-- Unit interaction tests, production-browser tests, type checks, and a combined Eve + Next production build.
+- **Mail** is the private, bounded Gmail index and the source of truth for every inference.
+- **Tasks** are asks from other people; **Promises** are commitments found in the user's own sent mail.
+- **Now** is the focused execution surface: one source-backed decision at a time, not a second task list.
+- **Trackers** summarize repeated, multi-thread processes only when the evidence supports a real grouping.
+- **Eve** is a conversational interface over narrow typed tools. It reads, explains, drafts, and requests approval; it does not get a general shell or an unchecked send path.
+
+## Architecture at a glance
+
+1. **One product, two explicit data adapters.** `/demo` and `/workspace` share the same shell and interaction model. The demo is deterministic and local; the connected adapter is Clerk-authenticated and never substitutes sample data for an empty or failed private workspace.
+2. **Index first, analyze second.** Gmail sync stores at most 300 recent threads, then follows `historyId` incrementally. Analysis is a separate, user-confirmed, bounded model operation, so refreshing mail cannot silently create cost or mutate inferred work.
+3. **Evidence before automation.** Threads and messages are normalized once in Neon. Work items cite exact message spans, use deterministic dedupe keys, and retain append-only corrections, so the UI and Eve can explain why something exists.
+4. **One canonical work queue.** A pure selector derives Now from drafts, tasks, promises, status, and due dates. Navigation counts and the focused screen therefore cannot drift into competing definitions of “needs attention.”
+5. **Narrow agent boundary.** Eve 0.38 is mounted into Next.js 16 through `withEve()`. Its tool set is typed and workspace-scoped; browser conversations are durable, Clerk-owned, and generation-versioned so an obsolete manifest or MCP session cannot replace the current web chat.
+6. **Human-gated sending.** Read and send consent are separate. A send requires a cleared stored draft, zero unresolved checks, matching idempotency key, current `gmail.send` scope, a durable Eve approval, and an audit reservation written before Gmail is called.
+7. **One identity plane, one data plane.** Clerk owns user identity and Google token brokerage. Neon, provisioned through Vercel Marketplace and accessed with Drizzle, owns queryable product state. Every private query is scoped by the Clerk user ID.
+8. **Bounded search with a truthful fallback.** Search checks the indexed full message text first. An exact miss may hydrate at most ten matching Gmail conversations; it never turns an arbitrary search into an unbounded mailbox import.
+9. **The same agent is available over MCP.** `/eve/v1/mcp` exposes the typed Nowmal agent behind OAuth/Vercel identity while preserving the same workspace and send constraints as the browser.
+
+## What is working
+
+The production app includes Brief, Now, Tasks, Promises, evidence-backed Trackers, Mail, Setup, Rules, Agents, global search, Gmail refresh, confirmed task analysis, durable Eve chat, draft gates, safe send infrastructure, and the public demo. The repository includes the normalized Drizzle schema and migration, interaction tests, security-boundary tests, type checking, and combined Eve + Next production builds.
 
 ## Run locally
 

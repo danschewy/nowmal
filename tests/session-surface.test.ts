@@ -6,6 +6,7 @@ import {
 
 describe("durable Eve session surfaces", () => {
   it("versions browser sessions so incompatible manifests do not resume", () => {
+    expect(durableAgentSessionSurface("http")).toBe(EVE_WEB_SESSION_SURFACE);
     expect(durableAgentSessionSurface("channel:eve")).toBe(EVE_WEB_SESSION_SURFACE);
     expect(EVE_WEB_SESSION_SURFACE).not.toBe("channel:eve");
   });

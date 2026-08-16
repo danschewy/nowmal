@@ -7,7 +7,7 @@
 export const EVE_WEB_SESSION_SURFACE = "channel:eve:nowmal-web:v2";
 
 export function durableAgentSessionSurface(channelKind: string | undefined) {
-  return channelKind === "channel:eve"
+  return channelKind === "http" || channelKind === "channel:eve"
     ? EVE_WEB_SESSION_SURFACE
     : channelKind ?? "unknown";
 }

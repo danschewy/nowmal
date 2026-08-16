@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildPublishableKey } from "@clerk/shared/keys";
 import { ForbiddenError } from "eve/channels/auth";
-import { sessionIdFromRequest } from "@/agent/channels/eve";
+import { sessionIdFromRequest, waitForAgentSessionOwner } from "@/agent/channels/eve";
 import { clerkIssuer, clerkOAuthAuth, clerkSessionAuth } from "@/agent/lib/clerk-auth";
 
 const clerk = vi.hoisted(() => ({ authenticateRequest: vi.fn() }));
@@ -47,6 +47,29 @@ describe("Eve session ownership boundary", () => {
 
     await expect(auth(new Request("https://nowmal.vercel.app/eve/v1/session/session-1")))
       .rejects.toThrow("Wrong owner");
+  });
+
+  it("waits for a new session hook to persist its owner before authorizing the stream", async () => {
+    const lookup = vi
+      .fn<(sessionId: string) => Promise<string | null>>()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce("user-1");
+
+    await expect(
+      waitForAgentSessionOwner("session-1", { attempts: 2, delayMs: 0, lookup }),
+    ).resolves.toBe("user-1");
+    expect(lookup).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns a known owner immediately instead of waiting", async () => {
+    const lookup = vi
+      .fn<(sessionId: string) => Promise<string | null>>()
+      .mockResolvedValue("user-2");
+
+    await expect(
+      waitForAgentSessionOwner("session-1", { attempts: 10, delayMs: 0, lookup }),
+    ).resolves.toBe("user-2");
+    expect(lookup).toHaveBeenCalledOnce();
   });
 });
 
